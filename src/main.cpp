@@ -1,7 +1,14 @@
 
 #include "server.hpp"
 
-int main()
+int main(int ac, char **av)
 {
-	std::cout << "Hello webserv!\n";
+	std::cout << *av << std::endl;
+
+	std::cout << "Hello webserv!" << std::endl;
+	if (ac != 2)
+		std::cerr << "Error: ./webserv <config_file>" << std::endl;
+//	else
+//		func(av[1]);
+
 }
