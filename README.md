@@ -14,4 +14,4 @@
 [check](https://www.youtube.com/watch?v=8NyzCKdnxDQ)
 
 ## HTTP
-https://www.youtube.com/watch?v=8ZKlOD4fRT0
+[life cycle HTTP](https://www.youtube.com/watch?v=8ZKlOD4fRT0)
