@@ -1,6 +1,10 @@
 ### structure
 ---
-[] Config file, parser
+- [ ] config file, parser
+- [ ] system calls, answers
+- [ ] request parsing
+- [ ] answers
+- [ ]  CGI
 
 # webserv
 [lection jkassand](https://www.youtube.com/watch?v=B_uB7oTHUh8)  
