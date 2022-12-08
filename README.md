@@ -1,6 +1,6 @@
 ### structure
 ---
-- [ ] config file, parser
+- [ ] config file, parser config
 - [ ] system calls, answers
 - [ ] request parsing
 - [ ] answers
