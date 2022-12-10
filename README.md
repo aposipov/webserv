@@ -14,4 +14,6 @@
 [check](https://www.youtube.com/watch?v=8NyzCKdnxDQ)
 
 ## HTTP
-[life cycle HTTP](https://www.youtube.com/watch?v=8ZKlOD4fRT0)
+[life cycle HTTP](https://www.youtube.com/watch?v=8ZKlOD4fRT0)  
+[Работа сервера Nginx и алгоритмов выбора блока расположения](https://www.digitalocean.com/community/tutorials/understanding-nginx-server-and-location-block-selection-algorithms-ru)  
+[Как nginx обрабатывает запрос](https://runebook.dev/ru/docs/nginx/http/request_processing)  
