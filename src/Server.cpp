@@ -42,7 +42,7 @@ int	Server::request()
 	}
 	if (n < 0)
 		std::cout << "Read error" << std::endl;
-	std::string response = "HTTP/1.1 200 OK\r\n\r\nHELLO WORLD";
+	std::string response = "HTTP/1.1 200 OK\r\n\r\n<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
 	write(connfd, response.c_str(), response.size());
 	close(connfd);
 	return (0);
