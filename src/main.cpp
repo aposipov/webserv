@@ -1,5 +1,5 @@
 
-#include "../inc/Server.hpp"
+#include "Server.hpp"
 
 #include <unistd.h>
 
@@ -13,7 +13,7 @@ std::map<std::string, std::vector<std::string> >	create_table(std::string path)
 	std::string 	dst;
 	std::map<std::string, std::vector<std::string> > config_table;
 
-	ifs.open(path);
+	ifs.open(path.c_str());
 	if (!ifs.is_open())
 		throw(std::invalid_argument("File can't be oppened"));
 	while (std::getline(ifs, dst))

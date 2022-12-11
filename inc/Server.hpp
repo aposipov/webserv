@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <unistd.h>
+#include <cstring> //add for fedora
 
 #include <netinet/in.h>
 #include <sys/types.h>

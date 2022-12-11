@@ -1,4 +1,5 @@
-#include "../inc/Server.hpp"
+
+#include "Server.hpp"
 
 Server::Server(std::map<std::string, std::vector<std::string> > &config_table)
 {
