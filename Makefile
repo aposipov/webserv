@@ -14,7 +14,7 @@ GREEN= \033[1;32m
 NC= \033[0;0m
 
 INC		=	inc/
-SRC		=	src/main.cpp
+SRC		=	src/main.cpp src/Server.cpp
 
 all:		$(NAME)
 
