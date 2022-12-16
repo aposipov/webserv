@@ -67,10 +67,23 @@ int		create_server(std::string path)
 	// }
 
 	Server server(config_table);
-	while (1)
+	try
 	{
-		server.request();
+		while (1)
+		{
+			server.request();
+			if (server.get_my_pid() == 0)
+			{
+				server.manage_request();
+				break ;
+			}
+		}
 	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+
 	return (0);
 }
 

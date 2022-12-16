@@ -1,6 +1,6 @@
 #include "../inc/Server.hpp"
 
-Server::Server(std::map<std::string, std::vector<std::string> > &config_table)
+Server::Server(std::map<std::string, std::vector<std::string> > &config_table) : listen_fd(-1), connfd(-1), pid(1)
 {
 	this->config_table.swap(config_table);
 	std::cout << "Server is created" << std::endl;
@@ -12,7 +12,7 @@ Server::Server(std::map<std::string, std::vector<std::string> > &config_table)
 	servaddr.sin_port = htons(SERVER_PORT);
 	if ((bind(listen_fd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
 		std::cerr << "Bind error" << std::endl;//exception
-	if ((listen(listen_fd, 10)) < 0)
+	if ((listen(listen_fd, SOMAXCONN)) < 0)
 		std::cerr << "Listen error" << std::endl;//exception
 	std::cout << "Server uses socket " << listen_fd << " and it accepts connections ";
 	std::cout << servaddr.sin_addr.s_addr << " port " << servaddr.sin_port;
@@ -26,26 +26,58 @@ Server::~Server()
 
 int	Server::request()
 {
-	int connfd, n;
-	char buf[4096];
 
-	memset(buf, 0, 4096);
 	connfd = accept(listen_fd, NULL, NULL);
 	//Может здесь сделать fork, чтобы пустить обработку запроса в отдельный процесс,
 	//а основной процесс вернется в цикл
 	// std::cout << "lalal" << connfd << std::endl;
-	while ((n = read(connfd, buf, 4096 - 1)) > 0)
+	if ((pid = fork()) < 0)
+		throw(std::logic_error("Fork error"));
+	if (pid != 0)
+		close(connfd);
+	return (0);
+}
+
+int Server::get_my_pid() const { return pid; }
+
+int	Server::manage_request()
+{
+	int		n;
+	char	buf[SIZE_OF_BUF];
+	std::string	Buf;
+
+	memset(buf, 0, SIZE_OF_BUF);
+	while ((n = recv(connfd, buf, SIZE_OF_BUF - 1, 0)) > 0)
 	{
-		std::cout << buf;
-		if (std::string(&buf[n-4]) == "\r\n\r\n")
+		Buf.append(buf, n);
+		if (Buf.substr(Buf.size() - 4) == "\r\n\r\n")
 			break ;
 	}
 	if (n < 0)
 		std::cout << "Read error" << std::endl;
-	std::string response = "HTTP/1.1 200 OK\r\n\r\n<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
-	write(connfd, response.c_str(), response.size());
+	std::cout << Buf << std::endl;
+	std::string response = "HTTP/1.1 200 OK\r\n\r\n";
+	//parse Header
+
+	//send file
+	std::ifstream ifs;
+	ifs.open(Buf.substr(Buf.find('/')+1, Buf.find(' ', Buf.find('/')) - Buf.find('/')-1));
+	if (ifs.is_open())
+	{
+		std::string dst;
+		while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
+		{
+			response.append(dst);
+		}
+		std::cout << response;
+		ifs.close();
+	}
+	else
+		response += "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
+	send(connfd, response.c_str(), response.size(), 0);
 	close(connfd);
 	return (0);
 }
+
 
 

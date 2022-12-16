@@ -6,8 +6,10 @@
 #define WEBSERV_SERVER_HPP
 
 #define SERVER_PORT 8080
+#define SIZE_OF_BUF 4096
 
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <vector>
 
@@ -28,13 +30,21 @@ class Server
 
 	int	request();
 
+	int	get_my_pid() const;
+
+	int	manage_request();
+
+
 	private:
 
 	Server();
 	Server(Server const &rhs);
 
-	std::map<std::string, std::vector<std::string> >	config_table;
 	int													listen_fd;
+	int													connfd;	
+	int													pid;
+	std::map<std::string, std::string>					Header_of_request;
+	std::map<std::string, std::vector<std::string> >	config_table;
 	struct sockaddr_in									servaddr;
 
 
