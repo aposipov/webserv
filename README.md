@@ -1,5 +1,4 @@
-### structure
----
+## structure
 - [ ] config file, parser config
 - [ ] system calls, answers
 - [ ] request parsing
