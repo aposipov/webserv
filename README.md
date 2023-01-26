@@ -6,13 +6,9 @@
 - [ ]  CGI
 
 # webserv
-[lection jkassand](https://www.youtube.com/watch?v=B_uB7oTHUh8)  
-[lection edebi](https://www.youtube.com/watch?v=86sxYbUkJGk&t=2766s)  
 [http server in an hour /cppprosto](https://www.youtube.com/watch?v=A4y97MTqO6c)  
   
 [network programming](https://www.youtube.com/playlist?list=PL9IEJIKnBJjH_zM5LnovnoaKlXML5qh17)
-  
-[check](https://www.youtube.com/watch?v=8NyzCKdnxDQ)
 
 ## HTTP
 [life cycle HTTP](https://www.youtube.com/watch?v=8ZKlOD4fRT0)  
