@@ -18,13 +18,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#include <sys/event.h>
+//#include <sys/event.h>
 #include <sys/time.h>
 
 #include "Conf.hpp"
