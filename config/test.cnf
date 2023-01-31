@@ -1,0 +1,20 @@
+
+server {
+	listen 127.0.0.1:8000;
+	listen 9000;
+	server_name mnathali;
+	methods GET POST DELETE;
+	autoindex off;
+	index index.html;
+	root /var/www;
+	upload_path /var/uuu;
+	client_body_buffer_size 1024;
+
+	location /var/lib {
+
+		index index.php
+
+	}
+
+}
+
