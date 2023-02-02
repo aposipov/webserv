@@ -94,7 +94,7 @@ int	Server::get_request(int	connfd)
 	int			n = 0;
 	char		buf[SIZE_OF_BUF];
 	Client		&client = clients.at(connfd);
-	std::string	Buf;
+	std::string	&Buf = client.messageRef();
 	std::cout << client.get_myFd() << std::endl;
 
 	memset(buf, 0, SIZE_OF_BUF);
@@ -121,6 +121,8 @@ int	Server::get_request(int	connfd)
 	}
 	Request	tmp(Buf);
 	client.setRequest(tmp);
+	Buf.clear();
+	Buf.shrink_to_fit();
 	return (1);
 }
 

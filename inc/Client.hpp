@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:35:42 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 01:30:49 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/02 09:17:22 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,7 @@ class Client
 	struct sockaddr *getClientAddr();
 	int	get_myFd() const;
 	int	set_myFd(int const value);
+	std::string	&messageRef();
 	int	setRequest(Request const &req);
 	int setResponse(Response const &res);
 
@@ -43,6 +44,7 @@ class Client
 
 	int					my_fd;
 	struct sockaddr		client_addr;
+	std::string			my_message;
 	Request				request;
 	Response			response;
 

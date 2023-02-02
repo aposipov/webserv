@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:43:38 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 01:32:19 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/02 09:18:00 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,8 @@ Client::Client(int const my_fd) : my_fd(my_fd)
 
 Client::~Client() { std::cout << "Client destructor" << std::endl; }
 
-Client::Client(Client const &rhs) : my_fd(rhs.my_fd), client_addr(rhs.client_addr), request(rhs.request), response(rhs.response)
+Client::Client(Client const &rhs) : my_fd(rhs.my_fd), client_addr(rhs.client_addr),
+	my_message(rhs.my_message), request(rhs.request), response(rhs.response)
 {
 	std::cout << "Client copied" << std::endl;
 }
@@ -30,6 +31,7 @@ Client	&Client::operator=(Client const &rhs)
 	{
 		my_fd = rhs.my_fd;
 		client_addr = rhs.client_addr;
+		my_message = rhs.my_message;
 		request = rhs.request;
 		response = rhs.response;
 	}
@@ -39,6 +41,8 @@ Client	&Client::operator=(Client const &rhs)
 struct sockaddr *Client::getClientAddr() { return &client_addr; }
 
 int	Client::get_myFd() const { return my_fd; }
+
+std::string	&Client::messageRef() { return my_message; }
 
 int	Client::set_myFd(int const value)
 {
