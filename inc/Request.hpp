@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:34:33 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 01:34:22 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/02 12:18:33 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ class Request
 	//поля заполненные из запроса
 
 	std::map<std::string, std::string>	requests;//либо на каждый header своя переменная
+	std::string							message;
 
 };
 
