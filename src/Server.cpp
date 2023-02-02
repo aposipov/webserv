@@ -16,6 +16,9 @@ Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 			listen_fd.push_back(socket(PF_INET, SOCK_STREAM, 0));
 			if (listen_fd.back() < 0)
 				std::cerr << "Socket error" << std::endl;//exception
+			int opt = 1;
+			std::cout << setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR | SO_KEEPALIVE, &opt, sizeof(opt));
+			std::cout << " - " << opt << std::endl;
 			if ((bind(listen_fd.back(), (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
 				throw(std::logic_error("Bind error"));
 			if ((listen(listen_fd.back(), SOMAXCONN)) < 0)
@@ -72,8 +75,11 @@ int	Server::add_new_client(int const accept_fd)
 	socklen_t len = sizeof(Client::client_t);
 
 	tmp.first = accept(accept_fd, tmp.second.getClientAddr(), &len);
+	if (tmp.first <= 0)
+		return -1;
+	tmp.second.set_myFd(tmp.first);
 	clients.insert(tmp);
-	std::cout << len << std::endl;//how could we use this len value?
+	std::cout << tmp.first << " ---- " << len << " -----" << clients.at(tmp.first).get_myFd() << std::endl;
 	// fcntl(tmp.first, F_SETFL, O_NONBLOCK);
 	return (tmp.first);
 }
@@ -83,12 +89,13 @@ std::vector<int> const	&Server::get_listen_fd() const
 	return listen_fd;
 }
 
-
 int	Server::get_request(int	connfd)
 {
 	int			n = 0;
 	char		buf[SIZE_OF_BUF];
-	std::string	&Buf = clients.at(connfd).changeMassage();
+	Client		&client = clients.at(connfd);
+	std::string	Buf;
+	std::cout << client.get_myFd() << std::endl;
 
 	memset(buf, 0, SIZE_OF_BUF);
 	while ((n = recv(connfd, buf, SIZE_OF_BUF - 1, 0)) > 0)
@@ -105,38 +112,58 @@ int	Server::get_request(int	connfd)
 	}
 	if (n < 0)
 	{
-		//return (-1); check time or cycles of requests
+		std::cout << "nothing read\n";//return (-1); check time or cycles of requests для закрытия сокета
 		return (0);
 	}
 	if (n == 0)
 	{
 		//do something
 	}
-	std::cout << "Readed <-----\n";
-	std::string response = "HTTP/1.1 200 OK\r\n\r\n";
-	std::ifstream ifs;
-	ifs.open(Buf.substr(Buf.find('/')+1, Buf.find(' ', Buf.find('/')) - Buf.find('/')-1));
-	if (ifs.is_open())
-	{
-		std::string dst;
-		while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
-		{
-			response.append(dst);
-		}
-		std::cout << response;
-		ifs.close();
-	}
-	else
-		response += "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
-	send(connfd, response.c_str(), response.size(), 0);
-	send(connfd, "\0", 1, 0);
-	return (0);
+	Request	tmp(Buf);
+	client.setRequest(tmp);
+	return (1);
 }
 
 int	Server::manage_request(int connfd)
 {
+	Client	&client = clients.at(connfd);
+	
+	std::cout << "Hello from manage_request " << client.get_myFd() <<std::endl;
+
+	// Здесь будет инициализирован response внутри сервера на основе request сервара
+	
+
+
 	return (connfd);
 }
 
+int	Server::action_response(int connfd)
+{
+	Client	&client = clients.at(connfd);
+
+	std::cout << "Hello from action_response " << client.get_myFd() <<std::endl;
+
+	//здесь на основе response обрабатывается ответ
+
+		// std::string response = "HTTP/1.1 200 OK\nContent-Length: ";
+	// std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
+	// std::ifstream ifs;
+	// ifs.open(Buf.substr(Buf.find('/')+1, Buf.find(' ', Buf.find('/')) - Buf.find('/')-1));
+	// if (ifs.is_open())
+	// {
+	// 	std::string dst;
+	// 	while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
+	// 	{
+	// 		response.append(dst);
+	// 	}
+	// 	// std::cout << response;
+	// 	ifs.close();
+	// }
+	// else
+	// 	response = content + 143 + "\r\n\r\n";
+	// send(connfd, response.c_str(), response.size(), MSG_DONTWAIT);
+
+	return (0);
+}
 
 

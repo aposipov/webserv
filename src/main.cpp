@@ -1,5 +1,5 @@
-
 #include "Server.hpp"
+
 #include "Conf.hpp"
 
 #include <unistd.h>
@@ -55,12 +55,12 @@ int	create_server(std::string path)
 		return -1;
 	}
 	
-	
 	while (1)
 	{
-		who_read = who_write = copy;
+		FD_COPY(&copy, &who_read);
+		FD_COPY(&copy, &who_write);
 		int sel = select(max_fd + 1, &who_read, &who_write, NULL, NULL);
-		std::cout << "Select = " << sel << std::endl;
+		std::cout << "Select = " << sel << " 5= " << FD_ISSET(5, &who_write) << " 4= " << FD_ISSET(4, &who_write) << " 3= " << FD_ISSET(3, &who_write) << std::endl;sleep(2);
 		for (int i = 0; i <= max_fd; ++i)
 		{
 			if (!FD_ISSET(i, &who_read))
@@ -69,8 +69,9 @@ int	create_server(std::string path)
 			{
 				Server &acceptin_server = serv_base_fds.at(i);
 				int connfd = acceptin_server.add_new_client(i);
+				if (connfd <= 0)
+					continue ;
 				serv_child_fds.insert(std::pair<int, Server&>(connfd, acceptin_server));
-				std::cout << connfd << std::endl;
 				FD_SET(connfd, &copy);
 				if (max_fd < connfd)
 					max_fd = connfd;
@@ -79,13 +80,17 @@ int	create_server(std::string path)
 			else
 			{
 				int	cont_rem = serv_child_fds.at(i).get_request(i);
-				if (cont_rem < 0)
+				if (cont_rem <= 0)
 				{
-					close(i);
-					FD_CLR(i, &copy);
+					if (cont_rem < 0)
+					{
+						close(i);
+						FD_CLR(i, &copy); //  close connection
+					}
+					continue;
 				}
-				else if (cont_rem > 0)
-					serv_child_fds.at(i).manage_request(i);
+				serv_child_fds.at(i).manage_request(i);
+				serv_child_fds.at(i).action_response(i);
 			}
 		}
 	}

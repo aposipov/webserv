@@ -1,7 +1,8 @@
-
+# комментарии работают
 server {
 	listen 127.0.0.1:8000;
 	listen 9000;
+	#keepalive_timeout 70;
 	server_name mnathali;
 	methods GET POST DELETE;
 	autoindex off;

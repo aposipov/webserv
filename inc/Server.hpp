@@ -50,6 +50,7 @@ class Server
 
 	uint32_t	inet_atonl(std::string const &addr) const;
 
+	int	action_response(int connfd);
 
 
 	private:

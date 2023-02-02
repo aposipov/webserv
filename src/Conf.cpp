@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/01/31 12:42:39 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/02 01:51:41 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -255,6 +255,8 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 			continue ;
 		std::size_t n = dst.find_first_of(" \n\f\r\t\v", m);
 		row.first = dst.substr(m, n - m);
+		if (!row.first.find('#'))
+			continue ;
 		n = dst.find_first_not_of(" \n\f\r\t\v", n);
 		while (n != std::string::npos)
 		{

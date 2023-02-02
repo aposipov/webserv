@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:35:42 by mnathali          #+#    #+#             */
-/*   Updated: 2023/01/31 00:48:50 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/02 01:30:49 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,9 @@
 #include <iostream>
 
 #include <netinet/in.h>
+
+#include "Request.hpp"
+#include "Response.hpp"
 
 
 class Client
@@ -33,13 +36,15 @@ class Client
 	struct sockaddr *getClientAddr();
 	int	get_myFd() const;
 	int	set_myFd(int const value);
-	std::string	&changeMassage();
+	int	setRequest(Request const &req);
+	int setResponse(Response const &res);
 
 	private:
 
 	int					my_fd;
 	struct sockaddr		client_addr;
-	std::string			my_message;
+	Request				request;
+	Response			response;
 
 
 
