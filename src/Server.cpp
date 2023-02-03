@@ -1,23 +1,39 @@
 
 #include "Server.hpp"
 
-Server::Server(std::map<std::string, std::vector<std::string> > &config_table)
+Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 {
-	this->config_table.swap(config_table);
-	std::cout << "Server is created" << std::endl;
-	if ((listen_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-		std::cerr << "Socket error" << std::endl;//exception
-	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = PF_INET;
-	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(SERVER_PORT);
-	if ((bind(listen_fd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
-		std::cerr << "Bind error" << std::endl;//exception
-	if ((listen(listen_fd, 10)) < 0)
-		std::cerr << "Listen error" << std::endl;//exception
-	std::cout << "Server uses socket " << listen_fd << " and it accepts connections ";
-	std::cout << servaddr.sin_addr.s_addr << " port " << servaddr.sin_port;
-	std::cout << " and protocol is " << servaddr.sin_family << std::endl;
+	for (Conf::listen_t::const_iterator it = conf.listen.begin(); it != conf.listen.end(); ++it)
+	{
+		bzero(&servaddr, sizeof(servaddr));
+		servaddr.sin_family = PF_INET;
+		servaddr.sin_addr.s_addr = htonl(inet_atonl(it->first));std::cout << it->first << "-->" << inet_atonl(it->first) << std::endl;
+		for (std::vector<std::string>::const_iterator ite = it->second.begin(); ite < it->second.end(); ++ite)
+		{
+			std::istringstream iss(*ite);
+			int port;
+        	iss >> port;
+			servaddr.sin_port = htons(port);
+			listen_fd.push_back(socket(PF_INET, SOCK_STREAM, 0));
+			if (listen_fd.back() < 0)
+				std::cerr << "Socket error" << std::endl;//exception
+			int opt = 1;
+			std::cout << setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR | SO_KEEPALIVE, &opt, sizeof(opt));
+			std::cout << " - " << opt << std::endl;
+			if ((bind(listen_fd.back(), (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
+				throw(std::logic_error("Bind error"));
+			if ((listen(listen_fd.back(), SOMAXCONN)) < 0)
+				std::cerr << "Listen error" << std::endl;//exception
+			fcntl(listen_fd.back(), F_SETFL, O_NONBLOCK);
+		}
+	}
+	std::cout << "Server is created!" << std::endl;
+}
+
+Server::Server(Server const &rhs) : listen_fd(rhs.listen_fd), my_config(rhs.my_config), servaddr(rhs.servaddr)
+{
+	std::cout << "Server is copied" << std::endl;
+
 }
 
 Server::~Server()
@@ -25,27 +41,132 @@ Server::~Server()
 	std::cout << "Server finished" << std::endl;
 }
 
-int	Server::request()
-{
-	int connfd, n;
-	char buf[4096];
 
-	memset(buf, 0, 4096);
-	connfd = accept(listen_fd, NULL, NULL);
-	//Может здесь сделать fork, чтобы пустить обработку запроса в отдельный процесс,
-	//а основной процесс вернется в цикл
-	// std::cout << "lalal" << connfd << std::endl;
-	while ((n = read(connfd, buf, 4096 - 1)) > 0)
+uint32_t Server::inet_atonl(std::string const &addr) const
+{
+    std::istringstream iss(addr);
+    
+    uint32_t ipv4 = 0;
+    
+    for( uint32_t i = 0; i < 4; ++i ) {
+        uint32_t part;
+        iss >> part;
+        if ( iss.fail() || part > 255 ) {
+            throw std::runtime_error( "Invalid IP address - Expected [0, 255]" );
+        }
+        
+        // LSHIFT and OR all parts together with the first part as the MSB
+        ipv4 |= part << ( 8 * ( 3 - i ) );
+
+        // Check for delimiter except on last iteration
+        if ( i != 3 ) {
+            char delimiter;
+            iss >> delimiter;
+            if ( iss.fail() || delimiter != '.' ) {
+                throw std::runtime_error( "Invalid IP address - Expected '.' delimiter" );
+            }
+        }
+    }
+    
+    return ipv4;
+}
+
+int	Server::add_new_client(int const accept_fd)
+{
+	std::pair<int, Client> tmp;
+	socklen_t len = sizeof(Client::client_t);
+
+	tmp.first = accept(accept_fd, tmp.second.getClientAddr(), &len);
+	if (tmp.first <= 0)
+		return -1;
+	tmp.second.set_myFd(tmp.first);
+	clients.insert(tmp);
+	std::cout << tmp.first << " ---- " << len << " -----" << clients.at(tmp.first).get_myFd() << std::endl;
+	// fcntl(tmp.first, F_SETFL, O_NONBLOCK);
+	return (tmp.first);
+}
+
+std::vector<int> const	&Server::get_listen_fd() const
+{
+	return listen_fd;
+}
+
+int	Server::get_request(int	connfd)
+{
+	int			n = 0;
+	char		buf[SIZE_OF_BUF];
+	Client		&client = clients.at(connfd);
+	std::string	&Buf = client.messageRef();
+	std::cout << client.get_myFd() << std::endl;
+
+	memset(buf, 0, SIZE_OF_BUF);
+	while ((n = recv(connfd, buf, SIZE_OF_BUF - 1, 0)) > 0)
 	{
-		std::cout << buf;
-		if (std::string(&buf[n-4]) == "\r\n\r\n")
+		Buf.append(buf, n);
+		std::cout << Buf << std::endl;
+		if (Buf.substr(Buf.size() - 4) == "\r\n\r\n" || connfd == 0)
 			break ;
 	}
+	if (connfd == 0 && n > 0)
+	{
+		std::cin >> Buf;//можно читать стандартный ввод и настраивать вебсервер, обновлять файл конфигурации и т.п.
+		return (0);
+	}
 	if (n < 0)
-		std::cout << "Read error" << std::endl;
-	std::string response = "HTTP/1.1 200 OK\r\n\r\n<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
-	write(connfd, response.c_str(), response.size());
-	close(connfd);
+	{
+		std::cout << "nothing read\n";//return (-1); check time or cycles of requests для закрытия сокета
+		return (0);
+	}
+	if (n == 0)
+	{
+		//do something
+	}
+	Request	tmp(Buf);
+	client.setRequest(tmp);
+	Buf.clear();
+	Buf.shrink_to_fit();
+	return (1);
+}
+
+int	Server::manage_request(int connfd)
+{
+	Client	&client = clients.at(connfd);
+	
+	std::cout << "Hello from manage_request " << client.get_myFd() <<std::endl;
+
+	// Здесь будет инициализирован response внутри сервера на основе request сервара
+	
+
+
+	return (connfd);
+}
+
+int	Server::action_response(int connfd)
+{
+	Client	&client = clients.at(connfd);
+
+	std::cout << "Hello from action_response " << client.get_myFd() <<std::endl;
+
+	//здесь на основе response обрабатывается ответ
+
+		// std::string response = "HTTP/1.1 200 OK\nContent-Length: ";
+	// std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
+	// std::ifstream ifs;
+	// ifs.open(Buf.substr(Buf.find('/')+1, Buf.find(' ', Buf.find('/')) - Buf.find('/')-1));
+	// if (ifs.is_open())
+	// {
+	// 	std::string dst;
+	// 	while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
+	// 	{
+	// 		response.append(dst);
+	// 	}
+	// 	// std::cout << response;
+	// 	ifs.close();
+	// }
+	// else
+	// 	response = content + 143 + "\r\n\r\n";
+	// send(connfd, response.c_str(), response.size(), MSG_DONTWAIT);
+
 	return (0);
 }
 
