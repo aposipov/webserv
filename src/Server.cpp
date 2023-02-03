@@ -1,3 +1,4 @@
+
 #include "Server.hpp"
 
 Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
@@ -32,6 +33,7 @@ Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 Server::Server(Server const &rhs) : listen_fd(rhs.listen_fd), my_config(rhs.my_config), servaddr(rhs.servaddr)
 {
 	std::cout << "Server is copied" << std::endl;
+
 }
 
 Server::~Server()

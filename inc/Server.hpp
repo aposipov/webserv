@@ -6,6 +6,7 @@
 #define WEBSERV_SERVER_HPP
 
 #define SERVER_PORT 8080
+
 #define SIZE_OF_BUF 4096
 
 #include <iostream>
@@ -20,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -31,10 +33,12 @@
 #include "Conf.hpp"
 #include "Client.hpp"
 
+
 class Server
 {
 
 	public:
+
 
 	Server(Conf const &);
 	Server(Server const &rhs);
@@ -53,14 +57,17 @@ class Server
 	int	action_response(int connfd);
 
 
+
 	private:
 
 	Server();
+
 
 	std::vector<int>		listen_fd;
 	Conf const				&my_config;
 	struct sockaddr_in		servaddr;
 	std::map<int, Client>	clients;
+
 
 };
 
