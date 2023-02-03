@@ -81,7 +81,7 @@ int	Server::add_new_client(int const accept_fd)
 		return -1;
 	tmp.second.set_myFd(tmp.first);
 	clients.insert(tmp);
-	std::cout << tmp.first << " ---- " << len << " -----" << clients.at(tmp.first).get_myFd() << std::endl;
+	std::cout << "Accepted new client: " << clients.at(tmp.first).get_myFd() << std::endl;
 	// fcntl(tmp.first, F_SETFL, O_NONBLOCK);
 	return (tmp.first);
 }
@@ -97,30 +97,36 @@ int	Server::get_request(int	connfd)
 	char		buf[SIZE_OF_BUF];
 	Client		&client = clients.at(connfd);
 	std::string	&Buf = client.messageRef();
-	std::cout << client.get_myFd() << std::endl;
+	std::cout << "Begin getting request from client: " << client.get_myFd() << std::endl;
 
 	memset(buf, 0, SIZE_OF_BUF);
 	while ((n = recv(connfd, buf, SIZE_OF_BUF - 1, 0)) > 0)
 	{
 		Buf.append(buf, n);
 		std::cout << Buf << std::endl;
-		if (Buf.substr(Buf.size() - 4) == "\r\n\r\n" || connfd == 0)
-			break ;
 	}
+	std::cout << "Got available request from client: " << client.get_myFd() << std::endl;
 	if (connfd == 0 && n > 0)
 	{
 		std::cin >> Buf;//можно читать стандартный ввод и настраивать вебсервер, обновлять файл конфигурации и т.п.
 		return (0);
 	}
-	if (n < 0)
+	if (Buf.find("POST") == 0)
 	{
-		std::cout << "nothing read\n";//return (-1); check time or cycles of requests для закрытия сокета
-		return (0);
+		std::size_t req_lenght = Buf.find("\r\n\r\n"), mess_lenght = Buf.find("Content-Length:");
+		if (req_lenght == std::string::npos)
+			return 0;
+		if (mess_lenght == std::string::npos)
+		{
+			//send wrong request
+			Buf.clear();
+			return (-1);
+		}
+		if (Buf.size() - req_lenght - 4 < (std::size_t)std::atol(Buf.substr(mess_lenght + 15).c_str()))
+			return 0;
 	}
-	if (n == 0)
-	{
-		//do something
-	}
+	else if (Buf.size() > 3 && Buf.substr(Buf.size() - 4) != "\r\n\r\n")
+		return 0;
 	Request	tmp(Buf);
 	client.setRequest(tmp);
 	Buf.clear();

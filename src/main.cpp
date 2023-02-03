@@ -62,7 +62,7 @@ int	create_server(std::string path)
 		FD_COPY(&copy, &who_read);
 		FD_COPY(&copy, &who_write);
 		int sel = select(max_fd + 1, &who_read, &who_write, NULL, NULL);
-		std::cout << "Select = " << sel << " 5= " << FD_ISSET(5, &who_write) << " 4= " << FD_ISSET(4, &who_write) << " 3= " << FD_ISSET(3, &who_write) << std::endl;sleep(2);
+		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;sleep(2);
 		for (int i = 0; i <= max_fd; ++i)
 		{
 			if (!FD_ISSET(i, &who_read))
@@ -77,7 +77,6 @@ int	create_server(std::string path)
 				FD_SET(connfd, &copy);
 				if (max_fd < connfd)
 					max_fd = connfd;
-				std::cout << connfd << std::endl;
 			}
 			else
 			{
