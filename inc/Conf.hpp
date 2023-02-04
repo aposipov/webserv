@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/26 19:13:53 by mnathali          #+#    #+#             */
-/*   Updated: 2023/01/29 23:51:44 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/04 02:17:44 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,23 +27,28 @@ class Location
 
 	friend class Server;
 
-	typedef std::map<int, std::vector<std::string> >	error_t;
+	// typedef std::map<int, std::vector<std::string> >	error_t;
 
 	Location();
 	Location(Location const &rhs);
 	~Location();
 	Location &operator=(Location const &rhs);
 
-
 	int	set_methods(std::vector<std::string> const &which_methods);
 	int	set_autoindex(std::vector<std::string> const &which_autoindex);
 	int	set_index(std::vector<std::string> const &which_index);
 	int	set_root(std::vector<std::string> const &where_root);
 	int	set_uploadpath(std::vector<std::string> const &where_path);
-	int	set_buf_size(std::vector<std::string> const &which_size);
 	int	set_cgi(std::vector<std::string> const &which_cgi);
 
-	
+	int			getMethods() const;
+	bool		getAutoindex() const;
+	std::string	getIndex() const;
+	std::string	getRoot() const;
+	std::string	getUpath() const;
+	std::string	getCgi() const;
+	std::string	getBin() const;
+
 	private:
 
 
@@ -52,10 +57,9 @@ class Location
 	std::string						index;
 	std::string						root;
 	std::string						upload_path;
-	std::size_t						client_body_buffer_size;
 	std::string						cgi_param;
 	std::string						bin;
-	error_t							error_pages;
+	// error_t							error_pages;
 
 };
 
@@ -84,11 +88,13 @@ class Conf : public Location
 	int	set_listen(std::vector<std::string> const &what_listen);
 	int	set_name(std::vector<std::string> const &which_name);
 	int	set_locations(std::vector<std::string> const &which_locations, std::ifstream &ifs);
-	
+	int	set_buf_size(std::vector<std::string> const &which_size);
+
 	private:
 
 	listen_t						listen;
 	std::string						server_name;
+	std::size_t						client_body_buffer_size;
 	std::map<std::string, Location>	locations;
 
 };

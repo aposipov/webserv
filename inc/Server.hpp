@@ -61,6 +61,7 @@ class Server
 	Conf const				&my_config;
 	struct sockaddr_in		servaddr;
 	std::map<int, Client>	clients;
+	std::size_t				buf_size;
 
 };
 

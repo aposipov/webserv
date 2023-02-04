@@ -60,7 +60,10 @@ int	create_server(std::string path)
 		FD_COPY(&copy, &who_read);
 		FD_COPY(&copy, &who_write);
 		int sel = select(max_fd + 1, &who_read, &who_write, NULL, NULL);
-		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;sleep(2);
+		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;
+		for (int i = 0; i <= max_fd; ++i)
+			std::cout << i << " Is_set_read " << FD_ISSET(i, &who_read) << " | Is_set_write " << FD_ISSET(i, &who_write) << std::endl;
+		sleep(2);
 		for (int i = 0; i <= max_fd; ++i)
 		{
 			if (!FD_ISSET(i, &who_read))
@@ -75,6 +78,7 @@ int	create_server(std::string path)
 				FD_SET(connfd, &copy);
 				if (max_fd < connfd)
 					max_fd = connfd;
+				std::cout << "New max_fd = " << max_fd << std::endl;break;
 			}
 			else
 			{
@@ -83,7 +87,7 @@ int	create_server(std::string path)
 				{
 					if (cont_rem < 0)
 					{
-						close(i);
+						close(i);	// there will be method in server class which aim is closing connection
 						FD_CLR(i, &copy); //  close connection
 					}
 					continue;

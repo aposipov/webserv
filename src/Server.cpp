@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Server.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
+/*   Updated: 2023/02/04 03:32:24 by mnathali         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "Server.hpp"
 
 Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
@@ -17,7 +29,7 @@ Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 			if (listen_fd.back() < 0)
 				std::cerr << "Socket error" << std::endl;//exception
 			int opt = 1;
-			std::cout << setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR | SO_KEEPALIVE, &opt, sizeof(opt));
+			std::cout << setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 			std::cout << " - " << opt << std::endl;
 			if ((bind(listen_fd.back(), (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
 				throw(std::logic_error("Bind error"));
@@ -79,7 +91,7 @@ int	Server::add_new_client(int const accept_fd)
 		return -1;
 	tmp.second.set_myFd(tmp.first);
 	clients.insert(tmp);
-	std::cout << "Accepted new client: " << clients.at(tmp.first).get_myFd() << std::endl;
+	std::cout << "Accepted new client: " << clients.at(tmp.first).get_myFd() << " by server " << accept_fd << std::endl;
 	// fcntl(tmp.first, F_SETFL, O_NONBLOCK);
 	return (tmp.first);
 }
@@ -92,18 +104,19 @@ std::vector<int> const	&Server::get_listen_fd() const
 int	Server::get_request(int	connfd)
 {
 	int			n = 0;
-	char		buf[SIZE_OF_BUF];
+	char		*buf = new char[my_config.client_body_buffer_size];
 	Client		&client = clients.at(connfd);
 	std::string	&Buf = client.messageRef();
 	std::cout << "Begin getting request from client: " << client.get_myFd() << std::endl;
 
 	memset(buf, 0, SIZE_OF_BUF);
-	while ((n = recv(connfd, buf, SIZE_OF_BUF - 1, 0)) > 0)
+	while ((n = recv(connfd, buf, my_config.client_body_buffer_size - 1, 0)) > 0)
 	{
 		Buf.append(buf, n);
 		std::cout << Buf << std::endl;
 	}
-	std::cout << "Got available request from client: " << client.get_myFd() << std::endl;
+	std::cout << "Got available request from client: " << client.get_myFd() << " and n is " << n << std::endl;
+	delete [] buf;
 	if (connfd == 0 && n > 0)
 	{
 		std::cin >> Buf;//можно читать стандартный ввод и настраивать вебсервер, обновлять файл конфигурации и т.п.
@@ -123,7 +136,7 @@ int	Server::get_request(int	connfd)
 		if (Buf.size() - req_lenght - 4 < (std::size_t)std::atol(Buf.substr(mess_lenght + 15).c_str()))
 			return 0;
 	}
-	else if (Buf.size() > 3 && Buf.substr(Buf.size() - 4) != "\r\n\r\n")
+	else if (Buf.size() < 4 || (Buf.size() > 3 && Buf.substr(Buf.size() - 4) != "\r\n\r\n"))
 		return 0;
 	Request	tmp(Buf);
 	client.setRequest(tmp);
@@ -153,8 +166,8 @@ int	Server::action_response(int connfd)
 
 	//здесь на основе response обрабатывается ответ
 
-		// std::string response = "HTTP/1.1 200 OK\nContent-Length: ";
-	// std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
+		std::string response = "HTTP/1.1 200 OK\nContent-Length: 143\r\n\r\n";
+	std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
 	// std::ifstream ifs;
 	// ifs.open(Buf.substr(Buf.find('/')+1, Buf.find(' ', Buf.find('/')) - Buf.find('/')-1));
 	// if (ifs.is_open())
@@ -168,8 +181,8 @@ int	Server::action_response(int connfd)
 	// 	ifs.close();
 	// }
 	// else
-	// 	response = content + 143 + "\r\n\r\n";
-	// send(connfd, response.c_str(), response.size(), MSG_DONTWAIT);
+		response += content;
+	send(connfd, response.c_str(), response.size(), MSG_DONTWAIT);
 
 	return (0);
 }
