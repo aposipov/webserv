@@ -113,7 +113,7 @@ int	Conf::set_name(std::vector<std::string> const &which_name)
 		server_name = which_name.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong name"));
-	if (server_name.back() == ';')
+	if (server_name.size() && *server_name.rend() == ';')
 		server_name.erase(server_name.size() - 1);
 	return 0;
 }
@@ -152,7 +152,7 @@ int	Location::set_index(std::vector<std::string> const &which_index)
 		index = which_index.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong index"));
-	if (index.back() == ';')
+	if (index.size() && *index.rend() == ';')
 		index.erase(index.size() - 1);
 	std::cout << this->index << std::endl;
 	return 0;
@@ -164,7 +164,7 @@ int	Location::set_root(std::vector<std::string> const &where_root)
 		root = where_root.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong root"));
-	if (root.back() == ';')
+	if (root.size() && *root.rend() == ';')
 		root.erase(root.size() - 1);
 	return 0;
 }
@@ -175,7 +175,7 @@ int	Location::set_uploadpath(std::vector<std::string> const &where_path)
 		upload_path = where_path.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong path"));
-	if (upload_path.back() == ';')
+	if (root.size() && *root.rend() == ';')
 		upload_path.erase(upload_path.size() - 1);
 	return 0;
 }
@@ -187,10 +187,10 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 
 	if (which_locations.empty() || which_locations.size() > 2 || (which_locations.size() == 2 && which_locations.back() != "{"))
 		throw(std::invalid_argument("Invalid configuration file: wrong location"));
-	if (which_locations.back() == "{" || (which_locations.size() == 1 && which_locations.back().back() == '{'))
+	if (which_locations.back() == "{" || (which_locations.size() == 1 && *which_locations.back().rend() == '{'))
 		++bkt;
 	std::pair<std::string, Location>	tmp(which_locations.front(), Location());
-	if (which_locations.size() == 1 && which_locations.back().back() == '{')
+	if (which_locations.size() == 1 && *which_locations.back().rend() == '{')
 		tmp.first.erase(tmp.first.size() - 1);
 	Location &loc = locations.insert(tmp).first->second;
 	while (std::getline(ifs, dst))
@@ -210,7 +210,7 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 		}
 		if (row.first == "{" && row.second.empty())
 			++bkt;
-		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && row.second.back().back() == '}'))
+		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && *row.second.back().rend() == '}'))
 			--bkt;
 		else if (row.first == "{" || row.first == "}")
 			throw(std::invalid_argument("Invalid configuration file: brackets { } should be followed by new line"));
@@ -236,8 +236,8 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 
 int	Conf::set_buf_size(std::vector<std::string> const &which_size)
 {
-	if (which_size.size() == 1 || (which_size.size() == 2 && which_size.back() == ";"))
-		client_body_buffer_size = atoi(which_size.front().c_str());
+	if (which_size.size() == 1 || (which_size.size() == 2 && which_size[1] == ";"))
+		client_body_buffer_size = std::atoi(which_size.front().c_str());
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong buffer size"));
 	if (client_body_buffer_size > 4096 || client_body_buffer_size < 1)
@@ -251,7 +251,7 @@ int	Location::set_cgi(std::vector<std::string> const &which_cgi)
 		cgi_param = which_cgi.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong cgi"));
-	if (cgi_param.back() == ';')
+	if (cgi_param.size() && *cgi_param.rend() == ';')
 		cgi_param.erase(cgi_param.size() - 1);
 	return 0;
 }
@@ -263,7 +263,7 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 	std::string 	dst;
 	unsigned short	bkt = 0;
 
-	ifs.open(path);
+	ifs.open(path.c_str());
 	if (!ifs.is_open())
 		throw(std::invalid_argument("File can't be oppened"));
 	while (std::getline(ifs, dst))
@@ -295,7 +295,7 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 		}
 		else if (row.first == "{" && row.second.empty())
 			++bkt;
-		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && row.second.back().back() == '}'))
+		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && *row.second.back().rend() == '}'))
 			--bkt;
 		else if (row.first == "{" || row.first == "}")
 			throw(std::invalid_argument("Invalid configuration file: brackets { } should be followed by new line"));

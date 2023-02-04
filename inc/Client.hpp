@@ -20,6 +20,7 @@
 #include "Request.hpp"
 #include "Response.hpp"
 
+#include <strings.h>
 
 class Client
 {
