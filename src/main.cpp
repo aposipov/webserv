@@ -30,8 +30,8 @@ int	create_server(std::string path)
 	//Далее запуск сервера
 
 	std::vector<Server>	servers;
-	std::map<int, Server&> serv_base_fds;
-	std::map<int, Server&> serv_child_fds;
+	std::map<int, Server*> serv_base_fds;
+	std::map<int, Server*> serv_child_fds;
 	fd_set	who_read, who_write, copy;
 	int max_fd = 0;
 	FD_ZERO(&copy);
@@ -44,7 +44,7 @@ int	create_server(std::string path)
 			servers.push_back(Server(*it));
 			for (std::vector<int>::const_iterator ite = servers.back().get_listen_fd().begin(); ite < servers.back().get_listen_fd().end(); ++ite)
 			{
-				serv_base_fds.insert(std::pair<int, Server&>(*ite, servers.back()));
+				serv_base_fds.insert(std::pair<int, Server*>(*ite, &servers.back()));
 				if (*ite > max_fd)
 					max_fd = *ite;
 				FD_SET(*ite, &copy);
@@ -59,8 +59,7 @@ int	create_server(std::string path)
 	
 	while (1)
 	{
-		FD_COPY(&copy, &who_read);
-		FD_COPY(&copy, &who_write);
+		who_read = who_write = copy;
 		int sel = select(max_fd + 1, &who_read, &who_write, NULL, NULL);
 		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;
 		for (int i = 0; i <= max_fd; ++i)
@@ -72,11 +71,11 @@ int	create_server(std::string path)
 				continue;
 			if (serv_base_fds.find(i) != serv_base_fds.end())
 			{
-				Server &acceptin_server = serv_base_fds.at(i);
-				int connfd = acceptin_server.add_new_client(i);
+				Server *acceptin_server = serv_base_fds.at(i);
+				int connfd = acceptin_server->add_new_client(i);
 				if (connfd <= 0)
 					continue ;
-				serv_child_fds.insert(std::pair<int, Server&>(connfd, acceptin_server));
+				serv_child_fds.insert(std::pair<int, Server*>(connfd, acceptin_server));
 				FD_SET(connfd, &copy);
 				if (max_fd < connfd)
 					max_fd = connfd;
@@ -84,7 +83,7 @@ int	create_server(std::string path)
 			}
 			else
 			{
-				int	cont_rem = serv_child_fds.at(i).get_request(i);
+				int	cont_rem = serv_child_fds.at(i)->get_request(i);
 				if (cont_rem <= 0)
 				{
 					if (cont_rem < 0)
@@ -94,8 +93,8 @@ int	create_server(std::string path)
 					}
 					continue;
 				}
-				serv_child_fds.at(i).manage_request(i);
-				serv_child_fds.at(i).action_response(i);
+				serv_child_fds.at(i)->manage_request(i);
+				serv_child_fds.at(i)->action_response(i);
 			}
 		}
 	}

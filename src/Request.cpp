@@ -34,7 +34,7 @@ Request::Request(std::string const &request)
 		n = m + 1; m = request.find('\n', n);
 		l = request.find(' ', n);
 		row.first = request.substr(n, l - n);
-		row.first.pop_back();
+		row.first.erase(row.first.size() - 1);
 		row.second = request.substr(l + 1, m - l - 1);
 		requests.insert(row);
 	}
