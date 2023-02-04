@@ -6,19 +6,19 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 01:51:41 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/04 02:27:26 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Conf.hpp"
 
-Location::Location() : methods(7), autoindex(1), index(""), root("/"), upload_path("/"), client_body_buffer_size(100), cgi_param(""), error_pages()
+Location::Location() : methods(7), autoindex(1), index(""), root("/"), upload_path("/"), cgi_param("")//, error_pages()
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
 
 Location::Location(Location const &rhs) : methods(rhs.methods), autoindex(rhs.autoindex), index(rhs.index), root(rhs.root), upload_path(rhs.upload_path),
-	client_body_buffer_size(rhs.client_body_buffer_size), cgi_param(rhs.cgi_param), error_pages(rhs.error_pages)
+	cgi_param(rhs.cgi_param)//, error_pages(rhs.error_pages)
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
@@ -32,12 +32,18 @@ Location &Location::operator=(Location const &rhs)
 {
 	if (this != &rhs)
 	{
-		
+		methods = rhs.methods;
+		autoindex = rhs.autoindex;
+		index = rhs.index;
+		root = rhs.root;
+		upload_path = rhs.upload_path;
+		cgi_param = rhs.cgi_param;
+		bin = rhs.bin;
 	}
 	return *this;
 }
 
-Conf::Conf() : Location(), listen(), server_name("localhost"), locations() 
+Conf::Conf() : Location(), listen(), server_name("localhost"),  client_body_buffer_size(4000), locations()
 {
 	std::cout << "------>conf init<------" << std::endl;
 }
@@ -47,16 +53,31 @@ Conf::~Conf()
 	std::cout << "------>conf deleted<------" << std::endl;
 }
 
-Conf::Conf(Conf const &rhs) : Location(rhs), listen(rhs.listen), server_name(rhs.server_name), locations(rhs.locations) 
+Conf::Conf(Conf const &rhs) : Location(rhs), listen(rhs.listen), server_name(rhs.server_name),
+	client_body_buffer_size(rhs.client_body_buffer_size), locations(rhs.locations)
 {
 	std::cout << "------>conf ini<------" << std::endl;
 }
+
+int	Location::getMethods() const { return methods; }
+bool	Location::getAutoindex() const { return autoindex; }
+std::string	Location::getIndex() const { return index; }
+std::string	Location::getRoot() const { return root; }
+std::string	Location::getUpath() const { return upload_path; }
+std::string	Location::getCgi() const { return cgi_param; }
+std::string	Location::getBin() const { return bin; }
+
 
 Conf &Conf::operator=(Conf const &rhs)
 {
 	if (this != &rhs)
 	{
-		
+		Location &tmp = *this;
+		tmp = static_cast<Location const &>(rhs);
+		listen = rhs.listen;
+		server_name = rhs.server_name;
+		client_body_buffer_size = rhs.client_body_buffer_size;
+		locations = rhs.locations;
 	}
 	return *this;
 }
@@ -203,8 +224,6 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 			loc.set_root(row.second);
 		else if (row.first == "upload_path")
 			loc.set_uploadpath(row.second);
-		else if (row.first == "client_body_buffer_size")
-			loc.set_buf_size(row.second);
 		else if (row.first == "cgi_param")
 			loc.set_cgi(row.second);
 		else
@@ -215,7 +234,7 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 	return 0;
 }
 
-int	Location::set_buf_size(std::vector<std::string> const &which_size)
+int	Conf::set_buf_size(std::vector<std::string> const &which_size)
 {
 	if (which_size.size() == 1 || (which_size.size() == 2 && which_size.back() == ";"))
 		client_body_buffer_size = atoi(which_size.front().c_str());
