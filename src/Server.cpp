@@ -142,7 +142,7 @@ int	Server::get_request(int	connfd)
 	Request	tmp(Buf);
 	client.setRequest(tmp);
 	Buf.clear();
-	Buf.shrink_to_fit();
+	// Buf.shrink_to_fit();
 	return (1);
 }
 
