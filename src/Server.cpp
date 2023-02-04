@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/04 03:32:24 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/04 03:37:29 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,7 @@ Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 Server::Server(Server const &rhs) : listen_fd(rhs.listen_fd), my_config(rhs.my_config), servaddr(rhs.servaddr)
 {
 	std::cout << "Server is copied" << std::endl;
+
 }
 
 Server::~Server()

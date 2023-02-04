@@ -13,6 +13,7 @@ RED= \033[1;31m
 GREEN= \033[1;32m
 NC= \033[0;0m
 
+
 INC		=	inc/Server.hpp inc/Conf.hpp inc/Client.hpp inc/Request.hpp inc/Response.hpp
 SRC		=	src/main.cpp src/Server.cpp src/Conf.cpp src/Client.cpp src/Request.cpp src/Response.cpp
 
@@ -24,6 +25,12 @@ $(NAME):	$(OBJ)
 
 %.o : %.cpp	Makefile $(INC)
 			$(CC) $(INC_FLAG) $(W_FLAGS) $(S_FLAGS) -c $< -o $@
+
+client:
+			c++ ./src/client/tcpclient.cpp -o client
+rclient:
+			rm client
+			@echo -e "$(RED)client $(NC) file is delete!$(NC)"
 
 clean:
 			$(RM) $(OBJ)
