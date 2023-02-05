@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/04 03:37:29 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/05 04:09:48 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,15 +146,65 @@ int	Server::get_request(int	connfd)
 	return (1);
 }
 
+std::string	Server::choose_path(std::string req_path)
+{
+	//this->my_config.root = root from config file
+	//this->my_config.locations = table with type std::map<std::string, Location>
+	//check all of locations and root and create a path based on them
+
+	if (req_path == "/" && my_config.autoindex == true)
+		req_path += my_config.index;
+
+	return my_config.root + req_path;
+}
+
+int	 Server::manage_get(Client &client)
+{
+	Request const &request = client.getReqest();
+	Response	&response = client.getResponseToSet();
+
+	std::string path = this->choose_path(request.getHeader("Path").first);
+
+	std::ifstream	ifs;
+	std::string 	dst;
+
+	std::cout << "Requested file: " << path << std::endl;
+
+	ifs.open(path.c_str());
+	if (!ifs.is_open())
+		;// bad request
+	else
+	{
+		std::string dst;
+		std::string &page = response.getContentToFill();
+		while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
+		{
+			page.append(dst);
+		}
+		ifs.close();
+		std::stringstream ss;
+		ss << page.size();
+		std::string size = ss.str();
+		response.fillHeaders("Content-Length: " + size);
+	}
+	return 0;
+}
+
+
 int	Server::manage_request(int connfd)
 {
 	Client	&client = clients.at(connfd);
-	
-	std::cout << "Hello from manage_request " << client.get_myFd() <<std::endl;
-
-	// Здесь будет инициализирован response внутри сервера на основе request сервара
-	
-
+	std::string tmp = client.getReqest().getHeader("Protocol").first;
+	std::pair<std::string, bool>	method = client.getReqest().getHeader("Method");
+	if (method.second == false || tmp != "HTTP/1.1")
+		std::cout << "bad request\n";//bad requset
+	else if (method.first == "GET")
+		this->manage_get(client);
+	else if (method.first == "POST")
+		;
+	else if (method.first == "DELETE")
+		;
+	client.clearRequest();
 
 	return (connfd);
 }
@@ -167,24 +217,17 @@ int	Server::action_response(int connfd)
 
 	//здесь на основе response обрабатывается ответ
 
-		std::string response = "HTTP/1.1 200 OK\nContent-Length: 143\r\n\r\n";
-	std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
-	// std::ifstream ifs;
-	// ifs.open(Buf.substr(Buf.find('/')+1, Buf.find(' ', Buf.find('/')) - Buf.find('/')-1));
-	// if (ifs.is_open())
-	// {
-	// 	std::string dst;
-	// 	while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
-	// 	{
-	// 		response.append(dst);
-	// 	}
-	// 	// std::cout << response;
-	// 	ifs.close();
-	// }
-	// else
-		response += content;
-	send(connfd, response.c_str(), response.size(), MSG_DONTWAIT);
+	// 	std::string response = "HTTP/1.1 200 OK\nContent-Length: 143\r\n\r\n";
+	// std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
 
+	// 	response += content;
+	for (std::vector<std::string>::iterator it = client.getResponseToSet().getHeadersToSet().begin(); it < client.getResponseToSet().getHeadersToSet().end(); ++it )
+	{
+		send(connfd, (*it).c_str(), (*it).size(), MSG_DONTWAIT);std::cout << *it << "\r\n" << std::endl;
+		send(connfd, "\r\n", 2, MSG_DONTWAIT);
+	}
+	send(connfd, "\r\n\r\n", 4, MSG_DONTWAIT);
+	send(connfd, client.getResponseToSet().getContentToFill().c_str(), client.getResponseToSet().getContentToFill().size(), MSG_DONTWAIT);std::cout << client.getResponseToSet().getContentToFill() << std::endl;
 	return (0);
 }
 

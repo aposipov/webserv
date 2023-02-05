@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:43:38 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 09:18:00 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/05 00:49:34 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,8 +56,10 @@ int	Client::setRequest(Request const &req)
 	return (0);
 }
 
-int Client::setResponse(Response const &res)
-{
-	response = res;
-	return (0);
-}
+Response	&Client::getResponseToSet() { return response; }
+
+
+const Request &Client::getReqest() const { return request; }
+
+void	Client::clearRequest() { request.clear(); }
+void	Client::clearResponse() { response.clear(); }

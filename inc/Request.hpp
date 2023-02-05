@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:34:33 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/04 00:58:47 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/05 00:12:28 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,11 +28,13 @@ class Request
 	~Request();
 	Request	&operator=(Request const &rhs);
 
+	std::pair<std::string, bool>	getHeader(std::string const &header) const;
+
+	void	clear();
+
 	private:
 
-	//поля заполненные из запроса
-
-	std::map<std::string, std::string>	requests;//либо на каждый header своя переменная
+	std::map<std::string, std::string>	headers;
 	std::string							content;
 
 };

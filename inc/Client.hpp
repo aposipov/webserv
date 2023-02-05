@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:35:42 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 09:17:22 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/05 00:48:16 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,12 +34,15 @@ class Client
 	Client(Client const &rhs);
 	Client	&operator=(Client const &rhs);
 
-	struct sockaddr *getClientAddr();
-	int	get_myFd() const;
-	int	set_myFd(int const value);
-	std::string	&messageRef();
-	int	setRequest(Request const &req);
-	int setResponse(Response const &res);
+	struct sockaddr	*getClientAddr();
+	int				get_myFd() const;
+	int				set_myFd(int const value);
+	const Request	&getReqest() const;
+	std::string		&messageRef();
+	int				setRequest(Request const &req);
+	Response		&getResponseToSet();
+	void			clearRequest();
+	void			clearResponse();
 
 	private:
 

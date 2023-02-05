@@ -61,6 +61,8 @@ class Server
 	private:
 
 	Server();
+	int	 manage_get(Client &client);
+	std::string	choose_path(std::string req_path);
 
 
 	std::vector<int>		listen_fd;
