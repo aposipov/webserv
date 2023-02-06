@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:40:04 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/05 02:13:10 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/06 02:47:41 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,9 +80,6 @@ std::pair<std::string, bool>	Request::getHeader(std::string const &header) const
 void	Request::clear()
 {
 
-	std::map<std::string, std::string> replacement;
-	std::string empty_string;
-
-	headers.swap(replacement);
-	content.swap(empty_string);
+	headers.clear();
+	content.clear();
 }

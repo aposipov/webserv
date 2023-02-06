@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/05 04:09:48 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/06 03:17:27 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,7 @@ int	Server::get_request(int	connfd)
 	std::string	&Buf = client.messageRef();
 	std::cout << "Begin getting request from client: " << client.get_myFd() << std::endl;
 
-	memset(buf, 0, SIZE_OF_BUF);
+	memset(buf, 0, my_config.client_body_buffer_size);
 	while ((n = recv(connfd, buf, my_config.client_body_buffer_size - 1, 0)) > 0)
 	{
 		Buf.append(buf, n);
@@ -142,7 +142,6 @@ int	Server::get_request(int	connfd)
 	Request	tmp(Buf);
 	client.setRequest(tmp);
 	Buf.clear();
-	// Buf.shrink_to_fit();
 	return (1);
 }
 
@@ -170,9 +169,9 @@ int	 Server::manage_get(Client &client)
 
 	std::cout << "Requested file: " << path << std::endl;
 
-	ifs.open(path.c_str());
+	ifs.open(path.c_str(), std::ifstream::binary);
 	if (!ifs.is_open())
-		;// bad request
+		std::cout << "There is no such a file\n";// bad request
 	else
 	{
 		std::string dst;
@@ -185,6 +184,7 @@ int	 Server::manage_get(Client &client)
 		std::stringstream ss;
 		ss << page.size();
 		std::string size = ss.str();
+		response.fillHeaders("Content-Type: " + request.getHeader("Accept").first);
 		response.fillHeaders("Content-Length: " + size);
 	}
 	return 0;
@@ -227,7 +227,8 @@ int	Server::action_response(int connfd)
 		send(connfd, "\r\n", 2, MSG_DONTWAIT);
 	}
 	send(connfd, "\r\n\r\n", 4, MSG_DONTWAIT);
-	send(connfd, client.getResponseToSet().getContentToFill().c_str(), client.getResponseToSet().getContentToFill().size(), MSG_DONTWAIT);std::cout << client.getResponseToSet().getContentToFill() << std::endl;
+	std::cout << send(connfd, client.getResponseToSet().getContentToFill().c_str(), client.getResponseToSet().getContentToFill().size(), MSG_DONTWAIT) << "sended\n";//std::cout << client.getResponseToSet().getContentToFill() << std::endl;
+	client.getResponseToSet().getContentToFill().clear();
 	return (0);
 }
 
