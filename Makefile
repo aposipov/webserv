@@ -27,9 +27,9 @@ $(NAME):	$(OBJ)
 			$(CC) $(INC_FLAG) $(W_FLAGS) $(S_FLAGS) -c $< -o $@
 
 client:
-			c++ ./src/client/tcpclient.cpp -o client
+			c++ ./test/tcpclient.cpp -o client
 
-rclient:
+client_clean:
 			rm client
 			@echo -e "$(RED)client $(NC) file is delete!$(NC)"
 
