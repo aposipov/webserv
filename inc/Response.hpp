@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:47:27 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/02 12:20:29 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/05 04:02:05 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,25 +14,27 @@
 #define RESPONSE_HPP
 
 #include <iostream>
-#include <map>
+#include <vector>
 
 class Response
 {
 
 	public:
 
-	Response();
-	Response(std::string const &response);
+	Response(std::string response = "HTTP/1.1 200 OK");
 	Response(Response const &rhs);
 	~Response();
 	Response	&operator=(Response const &rhs);
+	
+	int			fillHeaders(std::string header);
+	std::vector<std::string>	&getHeadersToSet();
+	std::string	&getContentToFill();
+	void		clear();
 
 	private:
 
-	//поля заполненные из запроса
-
-	std::map<std::string, std::string>	responses;//либо на каждый header своя переменная
-	std::string							message;
+	std::vector<std::string>	headers;
+	std::string					content;
 
 };
 

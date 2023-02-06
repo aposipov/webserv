@@ -77,6 +77,7 @@ int	create_server(std::string path)
 					continue ;
 				serv_child_fds.insert(std::pair<int, Server*>(connfd, acceptin_server));
 				FD_SET(connfd, &copy);
+				FD_CLR(i, &who_read);
 				if (max_fd < connfd)
 					max_fd = connfd;
 				std::cout << "New max_fd = " << max_fd << std::endl;break;

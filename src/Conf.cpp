@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/04 02:27:26 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/05 02:55:01 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,7 +113,7 @@ int	Conf::set_name(std::vector<std::string> const &which_name)
 		server_name = which_name.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong name"));
-	if (server_name.size() && *server_name.rend() == ';')
+	if (server_name.size() && server_name[server_name.size() - 1] == ';')
 		server_name.erase(server_name.size() - 1);
 	return 0;
 }
@@ -152,19 +152,19 @@ int	Location::set_index(std::vector<std::string> const &which_index)
 		index = which_index.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong index"));
-	if (index.size() && *index.rend() == ';')
+	if (index.size() && index[index.size() - 1] == ';')
 		index.erase(index.size() - 1);
-	std::cout << this->index << std::endl;
 	return 0;
 }
 
 int	Location::set_root(std::vector<std::string> const &where_root)
 {
+
 	if (where_root.size() == 1 || (where_root.size() == 2 && where_root.back() == ";"))
-		root = where_root.front();
+		root = where_root[0];
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong root"));
-	if (root.size() && *root.rend() == ';')
+	if (root.size() && root[root.size() - 1] == ';')
 		root.erase(root.size() - 1);
 	return 0;
 }
@@ -175,7 +175,7 @@ int	Location::set_uploadpath(std::vector<std::string> const &where_path)
 		upload_path = where_path.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong path"));
-	if (root.size() && *root.rend() == ';')
+	if (upload_path.size() && upload_path[upload_path.size() - 1] == ';')
 		upload_path.erase(upload_path.size() - 1);
 	return 0;
 }
@@ -187,10 +187,10 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 
 	if (which_locations.empty() || which_locations.size() > 2 || (which_locations.size() == 2 && which_locations.back() != "{"))
 		throw(std::invalid_argument("Invalid configuration file: wrong location"));
-	if (which_locations.back() == "{" || (which_locations.size() == 1 && *which_locations.back().rend() == '{'))
+	if (which_locations.back() == "{" || (which_locations.size() == 1 && which_locations.back()[which_locations.back().size() - 1] == '{'))
 		++bkt;
 	std::pair<std::string, Location>	tmp(which_locations.front(), Location());
-	if (which_locations.size() == 1 && *which_locations.back().rend() == '{')
+	if (which_locations.size() == 1 && which_locations.back()[which_locations.back().size() - 1] == '{')
 		tmp.first.erase(tmp.first.size() - 1);
 	Location &loc = locations.insert(tmp).first->second;
 	while (std::getline(ifs, dst))
@@ -210,7 +210,7 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 		}
 		if (row.first == "{" && row.second.empty())
 			++bkt;
-		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && *row.second.back().rend() == '}'))
+		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && row.second.back()[row.second.back().size() - 1] == '}'))
 			--bkt;
 		else if (row.first == "{" || row.first == "}")
 			throw(std::invalid_argument("Invalid configuration file: brackets { } should be followed by new line"));
@@ -251,7 +251,7 @@ int	Location::set_cgi(std::vector<std::string> const &which_cgi)
 		cgi_param = which_cgi.front();
 	else
 		throw(std::invalid_argument("Invalid configuration file: wrong cgi"));
-	if (cgi_param.size() && *cgi_param.rend() == ';')
+	if (cgi_param.size() && cgi_param[cgi_param.size() - 1] == ';')
 		cgi_param.erase(cgi_param.size() - 1);
 	return 0;
 }
@@ -295,7 +295,7 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 		}
 		else if (row.first == "{" && row.second.empty())
 			++bkt;
-		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && *row.second.back().rend() == '}'))
+		else if ((row.first == "}" && row.second.empty()) || (!row.second.empty() && row.second.back()[row.second.back().size() - 1] == '}'))
 			--bkt;
 		else if (row.first == "{" || row.first == "}")
 			throw(std::invalid_argument("Invalid configuration file: brackets { } should be followed by new line"));
@@ -309,8 +309,8 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 			configs_for_servers.back().set_autoindex(row.second);
 		else if (row.first == "index")
 			configs_for_servers.back().set_index(row.second);
-		else if (row.first == "root")
-			configs_for_servers.back().set_root(row.second);
+		else if (row.first == "root"){
+			configs_for_servers.back().set_root(row.second);}
 		else if (row.first == "upload_path")
 			configs_for_servers.back().set_uploadpath(row.second);
 		else if (row.first == "location")
