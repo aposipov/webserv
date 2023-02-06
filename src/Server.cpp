@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/06 03:17:27 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/06 22:40:45 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,7 +93,7 @@ int	Server::add_new_client(int const accept_fd)
 	tmp.second.set_myFd(tmp.first);
 	clients.insert(tmp);
 	std::cout << "Accepted new client: " << clients.at(tmp.first).get_myFd() << " by server " << accept_fd << std::endl;
-	// fcntl(tmp.first, F_SETFL, O_NONBLOCK);
+	fcntl(tmp.first, F_SETFL, O_NONBLOCK);
 	return (tmp.first);
 }
 
@@ -169,23 +169,31 @@ int	 Server::manage_get(Client &client)
 
 	std::cout << "Requested file: " << path << std::endl;
 
-	ifs.open(path.c_str(), std::ifstream::binary);
+	ifs.open(path.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
 		std::cout << "There is no such a file\n";// bad request
 	else
 	{
-		std::string dst;
+		std::streampos size;
+  		char *memblock;
 		std::string &page = response.getContentToFill();
-		while (std::getline(ifs, dst))//Для передачи файла, можно поставить std::binary mode и читать через ifs.read()
-		{
-			page.append(dst);
-		}
+		size = ifs.tellg();
+    	memblock = new char [size];
+    	ifs.seekg (0, std::ios::beg);
+    	ifs.read (memblock, size);
+		page.append(memblock, size);
 		ifs.close();
+		delete[] memblock;
 		std::stringstream ss;
-		ss << page.size();
-		std::string size = ss.str();
-		response.fillHeaders("Content-Type: " + request.getHeader("Accept").first);
-		response.fillHeaders("Content-Length: " + size);
+		ss << size;
+		std::string sz = ss.str();
+		response.fillHeaders("Server: " + this->my_config.server_name);
+		if (request.getHeader("Path").first.find(".jpg") != std::string::npos)
+			response.fillHeaders("Content-Type: " + std::string("image/png"));
+		response.fillHeaders("Content-Length: " + sz);
+		response.fillHeaders("Accept-Ranges: " + std::string("bytes"));
+
+
 	}
 	return 0;
 }
@@ -223,7 +231,7 @@ int	Server::action_response(int connfd)
 	// 	response += content;
 	for (std::vector<std::string>::iterator it = client.getResponseToSet().getHeadersToSet().begin(); it < client.getResponseToSet().getHeadersToSet().end(); ++it )
 	{
-		send(connfd, (*it).c_str(), (*it).size(), MSG_DONTWAIT);std::cout << *it << "\r\n" << std::endl;
+		std::cout << *it << " " << send(connfd, (*it).c_str(), (*it).size(), MSG_DONTWAIT) << "\r\n" << std::endl;
 		send(connfd, "\r\n", 2, MSG_DONTWAIT);
 	}
 	send(connfd, "\r\n\r\n", 4, MSG_DONTWAIT);
