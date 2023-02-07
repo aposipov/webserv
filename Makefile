@@ -45,3 +45,11 @@ re:			fclean all
 
 test:		$(NAME)
 			valgrind ./$(NAME)
+
+####################NGINX_TEST#########################
+
+run:
+			@echo -e "$(GREEN) build NGinx for test $(NC)"
+			docker build -t nginx-test ./test/
+			docker run --rm -it -p 80:80 nginx-test /bin/bash
+			#docker run --rm -p 80:80 nginx-test
