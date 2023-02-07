@@ -203,7 +203,7 @@ int	Server::manage_request(int connfd)
 	else if (method.first == "POST")
 		;
 	else if (method.first == "DELETE")
-		;
+		std::cout << "del \n"; // commit for compile lchristi
 	client.clearRequest();
 
 	return (connfd);
