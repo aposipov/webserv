@@ -4,13 +4,7 @@
 #include "Conf.hpp"
 
 
-#include <unistd.h>
-#include <map>
-#include <vector>
-
-
-
-int	create_server(std::string path)
+int	create_and_launch_server(std::string path)
 {
 
 	std::vector<Conf>	configs_for_servers;
@@ -35,7 +29,6 @@ int	create_server(std::string path)
 	fd_set	who_read, who_write, copy;
 	int max_fd = 0;
 	FD_ZERO(&copy);
-	// FD_SET(0, &copy);
 
 	try
 	{
@@ -54,7 +47,7 @@ int	create_server(std::string path)
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
-		return -1;
+		throw;
 	}
 	
 	while (1)
@@ -67,7 +60,7 @@ int	create_server(std::string path)
 		sleep(2);
 		for (int i = 0; i <= max_fd; ++i)
 		{
-			if (!FD_ISSET(i, &who_read))
+			if (!FD_ISSET(i, &who_read) && !FD_ISSET(i, &who_write) && serv_child_fds.find(i) == serv_child_fds.end())
 				continue;
 			if (serv_base_fds.find(i) != serv_base_fds.end())
 			{
@@ -82,20 +75,23 @@ int	create_server(std::string path)
 					max_fd = connfd;
 				std::cout << "New max_fd = " << max_fd << std::endl;break;
 			}
-			else
+			else if (FD_ISSET(i, &who_read))
 			{
-				int	cont_rem = serv_child_fds.at(i)->get_request(i);
-				if (cont_rem <= 0)
-				{
-					if (cont_rem < 0)
-					{
-						close(i);	// there will be method in server class which aim is closing connection
-						FD_CLR(i, &copy); //  close connection
-					}
-					continue;
-				}
-				serv_child_fds.at(i)->manage_request(i);
+				Server *procc_serv = serv_child_fds.at(i);
+				int	cont_rem = procc_serv->get_request(i);
+				if (cont_rem > 0)
+					procc_serv->manage_request(i);
+			}
+			else
 				serv_child_fds.at(i)->action_response(i);
+			if (serv_child_fds.at(i)->check_timeout(i))
+			{
+				serv_child_fds.erase(i);
+				FD_CLR(i, &copy);
+				FD_CLR(i, &who_read);
+				FD_CLR(i, &who_write);
+				while (!FD_ISSET(max_fd, &copy))
+					--max_fd;
 			}
 		}
 	}
@@ -114,7 +110,7 @@ int main(int ac, char **av)
 	{
 		try
 		{
-			create_server(av[1]);
+			create_and_launch_server(av[1]);
 		}
 		catch(const std::exception& e)
 		{
@@ -123,41 +119,3 @@ int main(int ac, char **av)
 	}
 	return(0);
 }
-
-
-
-
-
-
-
-
-
-// std::map<std::string, std::vector<std::string> >	create_table(std::string path)
-// {
-// 	std::ifstream	ifs;
-// 	std::string 	dst;
-// 	std::map<std::string, std::vector<std::string> > config_table;
-
-// 	ifs.open(path);
-// 	if (!ifs.is_open())
-// 		throw(std::invalid_argument("File can't be oppened"));
-// 	while (std::getline(ifs, dst))
-//     {
-// 		std::pair<std::string, std::vector<std::string> > row;
-// 		std::size_t m = dst.find_first_not_of(" \n\f\r\t\v");
-// 		if (m == std::string::npos)
-// 			continue ;
-// 		std::size_t n = dst.find_first_of(" \n\f\r\t\v", m);
-// 		row.first = dst.substr(m, n - m);
-// 		std::map<std::string, std::vector<std::string> >::iterator key = config_table.insert(row).first;
-// 		n = dst.find_first_not_of(" \n\f\r\t\v", n);
-// 		while (n != std::string::npos)
-// 		{
-// 			m = dst.find_first_of(" \n\f\r\t\v", n);
-// 			key->second.push_back(dst.substr(n, m - n));
-// 			n = dst.find_first_not_of(" \n\f\r\t\v", m);
-// 		}
-//     }
-//     ifs.close();
-// 	return (config_table);
-// }

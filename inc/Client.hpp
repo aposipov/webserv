@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:35:42 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/05 00:48:16 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/09 10:18:32 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,8 @@ class Client
 	int				setRequest(Request const &req);
 	Response		&getResponseToSet();
 	void			clearRequest();
-	void			clearResponse();
+	int				setTimeout(std::time_t = 60);
+	ssize_t			getTimeout() const;
 
 	private:
 
@@ -51,8 +52,7 @@ class Client
 	std::string			my_message;
 	Request				request;
 	Response			response;
-
-
+	std::time_t			my_timeout;
 
 };
 

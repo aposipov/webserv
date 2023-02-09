@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:40:04 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/06 02:47:41 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/08 02:18:41 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,6 @@ Request::Request(std::string const &request)
 		row.first = "Path"; row.second = bottom.substr(request.find(' ') + 1, n - l - 1);
 		headers.insert(row);
 	}
-	std::cout << "---------------------------------\n";
 	while (m < request.size() && request.substr(m, 4) != "\r\n\r\n")
 	{
 		n = m + 2; m = request.find("\r\n", n);

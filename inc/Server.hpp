@@ -5,10 +5,6 @@
 #ifndef WEBSERV_SERVER_HPP
 #define WEBSERV_SERVER_HPP
 
-#define SERVER_PORT 8080
-
-#define SIZE_OF_BUF 4096
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -56,6 +52,7 @@ class Server
 
 	int	action_response(int connfd);
 
+	int	check_timeout(int connfd);
 
 
 	private:

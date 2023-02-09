@@ -6,19 +6,19 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/05 02:55:01 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/08 15:38:48 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Conf.hpp"
 
-Location::Location() : methods(7), autoindex(1), index(""), root("/"), upload_path("/"), cgi_param("")//, error_pages()
+Location::Location() : methods(7), autoindex(1), index(""), root("/"), upload_path("/"), cgi_param(""), locations()//, error_pages()
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
 
 Location::Location(Location const &rhs) : methods(rhs.methods), autoindex(rhs.autoindex), index(rhs.index), root(rhs.root), upload_path(rhs.upload_path),
-	cgi_param(rhs.cgi_param)//, error_pages(rhs.error_pages)
+	cgi_param(rhs.cgi_param), locations(rhs.locations)//, error_pages(rhs.error_pages)
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
@@ -39,11 +39,12 @@ Location &Location::operator=(Location const &rhs)
 		upload_path = rhs.upload_path;
 		cgi_param = rhs.cgi_param;
 		bin = rhs.bin;
+		locations = rhs.locations;
 	}
 	return *this;
 }
 
-Conf::Conf() : Location(), listen(), server_name("localhost"),  client_body_buffer_size(4000), locations()
+Conf::Conf() : Location(), listen(), server_name("localhost"),  client_body_buffer_size(4096), keep_time_alive(60)
 {
 	std::cout << "------>conf init<------" << std::endl;
 }
@@ -54,7 +55,7 @@ Conf::~Conf()
 }
 
 Conf::Conf(Conf const &rhs) : Location(rhs), listen(rhs.listen), server_name(rhs.server_name),
-	client_body_buffer_size(rhs.client_body_buffer_size), locations(rhs.locations)
+	client_body_buffer_size(rhs.client_body_buffer_size), keep_time_alive(rhs.keep_time_alive)
 {
 	std::cout << "------>conf ini<------" << std::endl;
 }
@@ -77,7 +78,7 @@ Conf &Conf::operator=(Conf const &rhs)
 		listen = rhs.listen;
 		server_name = rhs.server_name;
 		client_body_buffer_size = rhs.client_body_buffer_size;
-		locations = rhs.locations;
+		keep_time_alive = rhs.keep_time_alive;
 	}
 	return *this;
 }
@@ -180,7 +181,7 @@ int	Location::set_uploadpath(std::vector<std::string> const &where_path)
 	return 0;
 }
 
-int	Conf::set_locations(std::vector<std::string> const &which_locations, std::ifstream &ifs)
+int	Location::set_locations(std::vector<std::string> const &which_locations, std::ifstream &ifs)
 {
 	std::string		dst;
 	unsigned short	bkt = 0;
@@ -226,22 +227,13 @@ int	Conf::set_locations(std::vector<std::string> const &which_locations, std::if
 			loc.set_uploadpath(row.second);
 		else if (row.first == "cgi_param")
 			loc.set_cgi(row.second);
+		else if (row.first == "location")
+			loc.set_locations(row.second, ifs);
 		else
 			throw(std::invalid_argument("Invalid configuration file: unknown rule " + row.first));
 		if (bkt == 0)
 			break ;
     }
-	return 0;
-}
-
-int	Conf::set_buf_size(std::vector<std::string> const &which_size)
-{
-	if (which_size.size() == 1 || (which_size.size() == 2 && which_size[1] == ";"))
-		client_body_buffer_size = std::atoi(which_size.front().c_str());
-	else
-		throw(std::invalid_argument("Invalid configuration file: wrong buffer size"));
-	if (client_body_buffer_size > 4096 || client_body_buffer_size < 1)
-		client_body_buffer_size = 256;
 	return 0;
 }
 
@@ -253,6 +245,28 @@ int	Location::set_cgi(std::vector<std::string> const &which_cgi)
 		throw(std::invalid_argument("Invalid configuration file: wrong cgi"));
 	if (cgi_param.size() && cgi_param[cgi_param.size() - 1] == ';')
 		cgi_param.erase(cgi_param.size() - 1);
+	return 0;
+}
+
+int	Conf::set_buf_size(std::vector<std::string> const &which_size)
+{
+	if (which_size.size() == 1 || (which_size.size() == 2 && which_size[1] == ";"))
+		client_body_buffer_size = std::atoi(which_size.front().c_str());
+	else
+		throw(std::invalid_argument("Invalid configuration file: wrong buffer size"));
+	if (client_body_buffer_size > 100000 || client_body_buffer_size < 1)
+		client_body_buffer_size = 4096;
+	return 0;
+}
+
+int	Conf::set_keep_time_alive(std::vector<std::string> const &which_time)
+{
+	if (which_time.size() == 1 || (which_time.size() == 2 && which_time[1] == ";"))
+		keep_time_alive = std::atoi(which_time.front().c_str());
+	else
+		throw(std::invalid_argument("Invalid configuration file: wrong keep alive time size"));
+	if (keep_time_alive > 300 || keep_time_alive < 1)
+		keep_time_alive = 60;
 	return 0;
 }
 
@@ -317,8 +331,8 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 			configs_for_servers.back().set_locations(row.second, ifs);
 		else if (row.first == "client_body_buffer_size")
 			configs_for_servers.back().set_buf_size(row.second);
-		else if (row.first == "cgi_param")
-			configs_for_servers.back().set_cgi(row.second);
+		else if (row.first == "keepalive_timeout")
+			configs_for_servers.back().set_keep_time_alive(row.second);
 		else
 			throw(std::invalid_argument("Invalid configuration file: unknown rule " + row.first));
     }

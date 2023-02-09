@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/06 22:40:45 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/09 10:39:56 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,22 +91,34 @@ int	Server::add_new_client(int const accept_fd)
 	if (tmp.first <= 0)
 		return -1;
 	tmp.second.set_myFd(tmp.first);
+	tmp.second.setTimeout(my_config.keep_time_alive);
 	clients.insert(tmp);
 	std::cout << "Accepted new client: " << clients.at(tmp.first).get_myFd() << " by server " << accept_fd << std::endl;
 	fcntl(tmp.first, F_SETFL, O_NONBLOCK);
 	return (tmp.first);
 }
 
-std::vector<int> const	&Server::get_listen_fd() const
+std::vector<int> const	&Server::get_listen_fd() const { return listen_fd; }
+
+int	Server::check_timeout(int connfd)
 {
-	return listen_fd;
+	Client	&client = this->clients.at(connfd);
+	ssize_t current_time = std::time(nullptr);
+
+	if (current_time > client.getTimeout())
+	{
+		clients.erase(connfd);
+		close(connfd);
+		return connfd;
+	}
+	return 0;
 }
 
 int	Server::get_request(int	connfd)
 {
 	int			n = 0;
 	char		*buf = new char[my_config.client_body_buffer_size];
-	Client		&client = clients.at(connfd);
+	Client		&client = this->clients.at(connfd);
 	std::string	&Buf = client.messageRef();
 	std::cout << "Begin getting request from client: " << client.get_myFd() << std::endl;
 
@@ -118,11 +130,6 @@ int	Server::get_request(int	connfd)
 	}
 	std::cout << "Got available request from client: " << client.get_myFd() << " and n is " << n << std::endl;
 	delete [] buf;
-	if (connfd == 0 && n > 0)
-	{
-		std::cin >> Buf;//можно читать стандартный ввод и настраивать вебсервер, обновлять файл конфигурации и т.п.
-		return (0);
-	}
 	if (Buf.find("POST") == 0)
 	{
 		std::size_t req_lenght = Buf.find("\r\n\r\n"), mess_lenght = Buf.find("Content-Length:");
@@ -142,6 +149,7 @@ int	Server::get_request(int	connfd)
 	Request	tmp(Buf);
 	client.setRequest(tmp);
 	Buf.clear();
+	client.setTimeout(this->my_config.keep_time_alive);
 	return (1);
 }
 
@@ -160,7 +168,7 @@ std::string	Server::choose_path(std::string req_path)
 int	 Server::manage_get(Client &client)
 {
 	Request const &request = client.getReqest();
-	Response	&response = client.getResponseToSet();
+	std::string &page = client.getResponseToSet().getContentToFill();
 
 	std::string path = this->choose_path(request.getHeader("Path").first);
 
@@ -169,35 +177,38 @@ int	 Server::manage_get(Client &client)
 
 	std::cout << "Requested file: " << path << std::endl;
 
+	page.append("Server: " + this->my_config.server_name);
 	ifs.open(path.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
-		std::cout << "There is no such a file\n";// bad request
+		client.getResponseToSet().error_response(404);
 	else
 	{
 		std::streampos size;
   		char *memblock;
-		std::string &page = response.getContentToFill();
 		size = ifs.tellg();
     	memblock = new char [size];
     	ifs.seekg (0, std::ios::beg);
     	ifs.read (memblock, size);
-		page.append(memblock, size);
-		ifs.close();
-		delete[] memblock;
 		std::stringstream ss;
 		ss << size;
 		std::string sz = ss.str();
-		response.fillHeaders("Server: " + this->my_config.server_name);
 		if (request.getHeader("Path").first.find(".jpg") != std::string::npos)
-			response.fillHeaders("Content-Type: " + std::string("image/png"));
-		response.fillHeaders("Content-Length: " + sz);
-		response.fillHeaders("Accept-Ranges: " + std::string("bytes"));
-
-
+			page.append("Content-Type: image/jpeg\r\n");
+		else 
+			page.append("Content-Type: text/html\r\n");
+		page.append("Content-Length: " + sz + "\r\n");
+		page.append("Accept-Ranges: bytes\r\n");
+		if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
+			page.append("Connection: close\r\n");
+		else
+			page.append("Connection: keep-alive\r\n");
+		page.append("\r\n");
+		page.append(memblock, size);
+		ifs.close();
+		delete [] memblock;
 	}
 	return 0;
 }
-
 
 int	Server::manage_request(int connfd)
 {
@@ -205,38 +216,46 @@ int	Server::manage_request(int connfd)
 	std::string tmp = client.getReqest().getHeader("Protocol").first;
 	std::pair<std::string, bool>	method = client.getReqest().getHeader("Method");
 	if (method.second == false || tmp != "HTTP/1.1")
-		std::cout << "bad request\n";//bad requset
+		client.getResponseToSet().error_response(400);
 	else if (method.first == "GET")
 		this->manage_get(client);
 	else if (method.first == "POST")
 		;
 	else if (method.first == "DELETE")
 		;
+	else
+		client.getResponseToSet().error_response(400);
 	client.clearRequest();
-
+	// client.requestToString();
 	return (connfd);
 }
 
 int	Server::action_response(int connfd)
 {
 	Client	&client = clients.at(connfd);
+	Response &response = this->clients.at(connfd).getResponseToSet();
+	std::string &content = response.getContentToFill();
+	ssize_t		sended_size = 0;
 
-	std::cout << "Hello from action_response " << client.get_myFd() <<std::endl;
+	std::cout << "Hello from action_response " << client.get_myFd() << " " << content.size() << std::endl;
 
 	//здесь на основе response обрабатывается ответ
-
-	// 	std::string response = "HTTP/1.1 200 OK\nContent-Length: 143\r\n\r\n";
-	// std::string content = "<!DOCTYPE html><html><head><title>Example</title></head><body><p>This is an example of a simple HTML page with one paragraph.</p></body></html>";
-
-	// 	response += content;
-	for (std::vector<std::string>::iterator it = client.getResponseToSet().getHeadersToSet().begin(); it < client.getResponseToSet().getHeadersToSet().end(); ++it )
+	if (content.size())
 	{
-		std::cout << *it << " " << send(connfd, (*it).c_str(), (*it).size(), MSG_DONTWAIT) << "\r\n" << std::endl;
-		send(connfd, "\r\n", 2, MSG_DONTWAIT);
+		sended_size = send(connfd, content.c_str() + response.getSendedSize(),
+			((content.size() - response.getSendedSize()) > my_config.client_body_buffer_size) ? my_config.client_body_buffer_size :
+				(content.size() - response.getSendedSize()) , MSG_DONTWAIT);
+		std::cout << sended_size << "<<<<<<<<<<<<>>>>>>>>>>>>" << std::endl;
+		if (sended_size > 0)
+		{
+			response.setSendSize(sended_size + response.getSendedSize());
+			if (response.getSendedSize() - content.size() == 0)
+			{
+				content.clear();
+				response.setSendSize(0);
+			}
+		}
 	}
-	send(connfd, "\r\n\r\n", 4, MSG_DONTWAIT);
-	std::cout << send(connfd, client.getResponseToSet().getContentToFill().c_str(), client.getResponseToSet().getContentToFill().size(), MSG_DONTWAIT) << "sended\n";//std::cout << client.getResponseToSet().getContentToFill() << std::endl;
-	client.getResponseToSet().getContentToFill().clear();
 	return (0);
 }
 
