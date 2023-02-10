@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/09 10:39:56 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/10 10:01:47 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,34 +153,55 @@ int	Server::get_request(int	connfd)
 	return (1);
 }
 
-std::string	Server::choose_path(std::string req_path)
+int Server::choose_path(Response &response)
 {
-	//this->my_config.root = root from config file
-	//this->my_config.locations = table with type std::map<std::string, Location>
-	//check all of locations and root and create a path based on them
+	std::string	const &req_path = response.getPath();
+	if (req_path.size() && req_path[req_path.size() - 1] == '/')
+		response.setPath(response.getSettings().root + req_path + response.getSettings().index);
+	else
+		response.setPath(response.getSettings().root + req_path);
+	return 0;
+}
 
-	if (req_path == "/" && my_config.autoindex == true)
-		req_path += my_config.index;
+int	Server::set_settings(Client &client, std::map<std::string, Location> const &loc)
+{
 
-	return my_config.root + req_path;
+	std::string req_path = client.getResponseToSet().getPath();
+
+	for (std::map<std::string, Location>::const_iterator it = loc.begin(); it != loc.end(); ++it)
+	{
+		if (req_path.find(it->first) == 0 || req_path.find(it->first) == req_path.size() - it->first.size()
+			|| (req_path.size() && req_path[req_path.size() - 1] == '/'
+			&& client.getResponseToSet().getSettings().index.find(it->first) == client.getResponseToSet().getSettings().index.size() - it->first.size()))
+		{
+			client.getResponseToSet().setSettings(it->second);
+			if (it->second.locations.size())
+				set_settings(client, it->second.locations);
+			else
+				return 1;
+		}
+	}
+	return 0;
 }
 
 int	 Server::manage_get(Client &client)
 {
 	Request const &request = client.getReqest();
 	std::string &page = client.getResponseToSet().getContentToFill();
-
-	std::string path = this->choose_path(request.getHeader("Path").first);
-
 	std::ifstream	ifs;
 	std::string 	dst;
 
-	std::cout << "Requested file: " << path << std::endl;
-
+	page.append("HTTP/1.1 200 OK\r\n");
 	page.append("Server: " + this->my_config.server_name);
-	ifs.open(path.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+
+	ifs.open(client.getResponseToSet().getPath().c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
-		client.getResponseToSet().error_response(404);
+	{
+		if (client.getResponseToSet().getSettings().autoindex && client.getResponseToSet().getSettings().methods > 3)
+			client.getResponseToSet().autoindex();
+		else
+			client.getResponseToSet().error_response(404);
+	}
 	else
 	{
 		std::streampos size;
@@ -201,7 +222,7 @@ int	 Server::manage_get(Client &client)
 		if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
 			page.append("Connection: close\r\n");
 		else
-			page.append("Connection: keep-alive\r\n");
+			page.append("Connection: keep-alive\r\n");//if close than close
 		page.append("\r\n");
 		page.append(memblock, size);
 		ifs.close();
@@ -215,6 +236,11 @@ int	Server::manage_request(int connfd)
 	Client	&client = clients.at(connfd);
 	std::string tmp = client.getReqest().getHeader("Protocol").first;
 	std::pair<std::string, bool>	method = client.getReqest().getHeader("Method");
+	
+	client.getResponseToSet().setPath(client.getReqest().getHeader("Path").first);
+	client.getResponseToSet().setSettings(this->my_config);
+	this->set_settings(client, my_config.locations);
+	choose_path(client.getResponseToSet());
 	if (method.second == false || tmp != "HTTP/1.1")
 		client.getResponseToSet().error_response(400);
 	else if (method.first == "GET")
@@ -226,7 +252,6 @@ int	Server::manage_request(int connfd)
 	else
 		client.getResponseToSet().error_response(400);
 	client.clearRequest();
-	// client.requestToString();
 	return (connfd);
 }
 
@@ -258,5 +283,4 @@ int	Server::action_response(int connfd)
 	}
 	return (0);
 }
-
 

@@ -6,19 +6,25 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/08 15:38:48 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/10 00:44:57 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Conf.hpp"
 
-Location::Location() : methods(7), autoindex(1), index(""), root("/"), upload_path("/"), cgi_param(""), locations()//, error_pages()
+Location::Location() : methods(7), autoindex(1), index("index.html"), root("/"), upload_path("/"), cgi_param(""), locations()
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
 
-Location::Location(Location const &rhs) : methods(rhs.methods), autoindex(rhs.autoindex), index(rhs.index), root(rhs.root), upload_path(rhs.upload_path),
-	cgi_param(rhs.cgi_param), locations(rhs.locations)//, error_pages(rhs.error_pages)
+Location::Location(Location const &rhs) : methods(rhs.methods), autoindex(rhs.autoindex),
+	index(rhs.index), root(rhs.root), upload_path(rhs.upload_path), cgi_param(rhs.cgi_param), locations(rhs.locations)
+{
+	std::cout << "------>Location init<------" << std::endl;
+}
+
+Location::Location(Location const &rhs, std::map<std::string, Location> locs) : methods(rhs.methods), autoindex(rhs.autoindex),
+	index(rhs.index), root(rhs.root), upload_path(rhs.upload_path), cgi_param(rhs.cgi_param), locations(locs)
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
@@ -190,7 +196,7 @@ int	Location::set_locations(std::vector<std::string> const &which_locations, std
 		throw(std::invalid_argument("Invalid configuration file: wrong location"));
 	if (which_locations.back() == "{" || (which_locations.size() == 1 && which_locations.back()[which_locations.back().size() - 1] == '{'))
 		++bkt;
-	std::pair<std::string, Location>	tmp(which_locations.front(), Location());
+	std::pair<std::string, Location>	tmp(which_locations.front(), Location(*this, std::map<std::string, Location>()));
 	if (which_locations.size() == 1 && which_locations.back()[which_locations.back().size() - 1] == '{')
 		tmp.first.erase(tmp.first.size() - 1);
 	Location &loc = locations.insert(tmp).first->second;

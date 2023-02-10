@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/26 19:13:53 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/08 15:21:26 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/09 23:11:26 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ class Location
 
 	Location();
 	Location(Location const &rhs);
+	Location(Location const &rhs, std::map<std::string, Location> locs);
 	~Location();
 	Location &operator=(Location const &rhs);
 

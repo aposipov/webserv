@@ -58,8 +58,9 @@ class Server
 	private:
 
 	Server();
-	int	 manage_get(Client &client);
-	std::string	choose_path(std::string req_path);
+	int	manage_get(Client &client);
+	int choose_path(Response &response);
+	int	set_settings(Client &client, std::map<std::string, Location> const &loc);
 
 
 	std::vector<int>		listen_fd;
