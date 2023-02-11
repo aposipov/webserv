@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:43:38 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/09 10:19:38 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 14:20:05 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,7 +61,7 @@ Response	&Client::getResponseToSet() { return this->response; }
 
 int	Client::setTimeout(std::time_t keep_alive)
 {
-	this->my_timeout = std::time(nullptr) + keep_alive;
+	this->my_timeout = std::time(NULL) + keep_alive;
 	return 0;
 }
 

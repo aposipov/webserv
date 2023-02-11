@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/11 06:47:24 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 15:29:02 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,7 +103,7 @@ std::vector<int> const	&Server::get_listen_fd() const { return listen_fd; }
 int	Server::check_timeout(int connfd)
 {
 	Client	&client = this->clients.at(connfd);
-	ssize_t current_time = std::time(nullptr);
+	ssize_t current_time = std::time(NULL);
 
 	if (current_time > client.getTimeout())
 	{
@@ -130,6 +130,8 @@ int	Server::get_request(int	connfd)
 	}
 	std::cout << "Got available request from client: " << client.get_myFd() << " and n is " << n << std::endl;
 	delete [] buf;
+	if (n == 0)
+		client.setTimeout(-1);
 	if (Buf.find("POST") == 0)
 	{
 		std::size_t req_lenght = Buf.find("\r\n\r\n"), mess_lenght = Buf.find("Content-Length:");
@@ -223,7 +225,7 @@ int	 Server::manage_get(Client &client)
 		if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
 			page.append("Connection: close\r\n");
 		else
-			page.append("Connection: keep-alive\r\n");//if close than close
+			page.append("Connection: keep-alive\r\n");
 		page.append("\r\n");
 		page.append(memblock, size);
 		ifs.close();
@@ -244,7 +246,7 @@ int	Server::manage_request(int connfd)
 	choose_path(client.getResponseToSet());
 	if (method.second == false || tmp != "HTTP/1.1")
 		client.getResponseToSet().error_response(400);
-	else if (method.first == "GET")
+	else if (method.first == "GET" && client.getResponseToSet().getSettings().getMethods() > 3)
 		this->manage_get(client);
 	else if (method.first == "POST")
 		;
@@ -279,6 +281,8 @@ int	Server::action_response(int connfd)
 			{
 				content.clear();
 				response.setSendSize(0);
+				if (response.getHeader("Connection") == "close")
+					client.setTimeout(-1);
 			}
 		}
 	}

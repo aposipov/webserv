@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:47:27 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/10 22:33:44 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 15:15:31 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,8 @@ class Response
 	const Location	&getSettings() const;
 	int		setPath(std::string const &path);
 	int		setSettings(Location const &loc);
+
+	std::string	getHeader(std::string const &header) const;
 
 	int	error_response(int code = 404);
 	int	autoindex();

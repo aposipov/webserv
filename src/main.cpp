@@ -84,7 +84,7 @@ int	create_and_launch_server(std::string path)
 			}
 			else
 				serv_child_fds.at(i)->action_response(i);
-			if (serv_child_fds.at(i)->check_timeout(i))
+			if (serv_base_fds.find(i) == serv_base_fds.end() && serv_child_fds.at(i)->check_timeout(i))
 			{
 				serv_child_fds.erase(i);
 				FD_CLR(i, &copy);

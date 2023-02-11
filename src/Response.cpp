@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:47:32 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/11 07:06:55 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 15:28:43 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,15 @@ int	Response::setPath(std::string const &path)
 	return 0;
 }
 
+std::string	Response::getHeader(std::string const &header) const
+{
+	std::size_t n = this->content.find(header);
+
+	if (n == std::string::npos)
+		return "";
+	return this->content.substr(this->content.find(" ", n) + 1, this->content.find("\r\n", n));
+}
+
 int	Response::autoindex()
 {
 	DIR	*catalog = opendir(this->req_path.c_str());
@@ -124,9 +133,9 @@ int	Response::error_response(int code)
 	else if (code == 400)
 	{
 		error_page = "<!DOCTYPE html>\n<html><div id=\"main\"><div class=\"fof\"><h1>Error 400 - Bad request</h1></div></div></html>\n";
-		ss << this->content.size();
+		ss << error_page.size();
 		sz = ss.str();
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 404 Not Found");
+		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 400 Bad Request");
 		this->content.append("Content-Type: text/html\r\n");
 		this->content.append("Accept-Ranges: bytes\r\n");
 		this->content.append("Content-Length: " + sz + "\r\n");

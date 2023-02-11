@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/30 15:35:42 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/09 10:18:32 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 14:21:51 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ class Client
 	std::string			my_message;
 	Request				request;
 	Response			response;
-	std::time_t			my_timeout;
+	long				my_timeout;
 
 };
 
