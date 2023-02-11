@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:47:32 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/10 10:10:46 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 07:06:55 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,7 +70,35 @@ int	Response::setPath(std::string const &path)
 
 int	Response::autoindex()
 {
+	DIR	*catalog = opendir(this->req_path.c_str());
+	struct dirent	*dir = 0;
+	std::string		tmp;
+	std::string		sz;
+	std::stringstream ss;
+
+	if (!catalog && this->req_path.size() && this->req_path[this->req_path.size() - 1] != '/')
+		catalog = opendir(this->req_path.substr(0, this->req_path.find_last_of("/")).c_str());
+	if (!catalog)
+		return (this->error_response(404));
 	
+	tmp = "<!DOCTYPE html>\n<html><big>";
+	while ((dir = readdir(catalog)))
+	{
+		tmp += dir->d_name;
+		if (dir->d_type == 4)
+			tmp += "/";
+		tmp += "<br>";
+	}
+	tmp += "</big></html>\n";
+	ss << tmp.size();
+	sz = ss.str();
+	this->content.replace(0, this->content.find('\r'), "HTTP/1.1 404 Not Found");
+	this->content.append("Content-Type: text/html\r\n");
+	this->content.append("Accept-Ranges: bytes\r\n");
+	this->content.append("Content-Length: " + sz + "\r\n");
+	this->content.append("\r\n");
+	this->content.append(tmp);
+	closedir(catalog);
 	return 0;
 }
 

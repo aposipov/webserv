@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/10 10:01:47 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/11 06:47:24 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,6 +197,7 @@ int	 Server::manage_get(Client &client)
 	ifs.open(client.getResponseToSet().getPath().c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
 	{
+		std::cout << "Not open " << client.getResponseToSet().getSettings().autoindex << " " << client.getResponseToSet().getSettings().methods << std::endl;
 		if (client.getResponseToSet().getSettings().autoindex && client.getResponseToSet().getSettings().methods > 3)
 			client.getResponseToSet().autoindex();
 		else

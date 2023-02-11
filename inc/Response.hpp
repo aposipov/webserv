@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:47:27 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/10 09:59:10 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/10 22:33:44 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,9 @@
 #include <vector>
 #include <sstream>
 #include "Conf.hpp"
+
+#include <sys/types.h>
+#include <dirent.h>
 
 class Response
 {
