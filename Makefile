@@ -27,9 +27,9 @@ $(NAME):	$(OBJ)
 			$(CC) $(INC_FLAG) $(W_FLAGS) $(S_FLAGS) -c $< -o $@
 
 client:
-			c++ ./src/client/tcpclient.cpp -o client
+			c++ ./test/tcpclient.cpp -o client
 
-rclient:
+client_clean:
 			rm client
 			@echo -e "$(RED)client $(NC) file is delete!$(NC)"
 
@@ -45,3 +45,11 @@ re:			fclean all
 
 test:		$(NAME)
 			valgrind ./$(NAME)
+
+####################NGINX_TEST#########################
+
+run:
+			@echo -e "$(GREEN) build NGinx for test $(NC)"
+			docker build -t nginx-test ./test/
+			docker run --rm -it -p 80:80 nginx-test /bin/bash
+			#docker run --rm -p 80:80 nginx-test

@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/11 15:29:02 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/12 10:43:19 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -251,7 +251,7 @@ int	Server::manage_request(int connfd)
 	else if (method.first == "POST")
 		;
 	else if (method.first == "DELETE")
-		;
+		std::cout << "del \n";
 	else
 		client.getResponseToSet().error_response(400);
 	client.clearRequest();
