@@ -61,6 +61,7 @@ class Server
 	int	manage_get(Client &client);
 	int manage_post(Client &client);
 	int manage_delete(Client &client);
+	int	run_cgi(Client &client);
 
 	int choose_path(Response &response, std::string const &method);
 	int	set_settings(Client &client, std::map<std::string, Location> const &loc);

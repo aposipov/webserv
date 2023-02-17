@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/17 13:46:15 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/18 00:49:53 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -214,6 +214,15 @@ int	 Server::manage_get(Client &client)
 		return 0;
 	}
 
+	if (client.getResponseToSet().getSettings().cgi_param.size())
+	{
+		int pid = fork();
+		if (pid == 0)
+			this->run_cgi(client);
+		return 0;
+	}
+		 
+
 	ifs.open(client.getResponseToSet().getPath().c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
 	{
@@ -249,6 +258,12 @@ int	 Server::manage_get(Client &client)
 		ifs.close();
 		delete [] memblock;
 	}
+	return 0;
+}
+
+int	Server::run_cgi(Client &client)
+{
+
 	return 0;
 }
 
