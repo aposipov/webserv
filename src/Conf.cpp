@@ -6,25 +6,28 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/10 00:44:57 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/17 13:53:54 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Conf.hpp"
 
-Location::Location() : methods(7), autoindex(1), index("index.html"), root("/"), upload_path("/"), cgi_param(""), locations()
+Location::Location() : methods(7), autoindex(1), index("index.html"), root("/"),
+upload_path("/"), cgi_param(""), redirection(std::pair<int, std::string>(0, "")), locations()
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
 
 Location::Location(Location const &rhs) : methods(rhs.methods), autoindex(rhs.autoindex),
-	index(rhs.index), root(rhs.root), upload_path(rhs.upload_path), cgi_param(rhs.cgi_param), locations(rhs.locations)
+	index(rhs.index), root(rhs.root), upload_path(rhs.upload_path), cgi_param(rhs.cgi_param),
+	redirection(rhs.redirection), locations(rhs.locations)
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
 
 Location::Location(Location const &rhs, std::map<std::string, Location> locs) : methods(rhs.methods), autoindex(rhs.autoindex),
-	index(rhs.index), root(rhs.root), upload_path(rhs.upload_path), cgi_param(rhs.cgi_param), locations(locs)
+	index(rhs.index), root(rhs.root), upload_path(rhs.upload_path), cgi_param(rhs.cgi_param), redirection(rhs.redirection),
+	locations(locs)
 {
 	std::cout << "------>Location init<------" << std::endl;
 }
@@ -45,12 +48,13 @@ Location &Location::operator=(Location const &rhs)
 		upload_path = rhs.upload_path;
 		cgi_param = rhs.cgi_param;
 		bin = rhs.bin;
+		redirection = rhs.redirection;
 		locations = rhs.locations;
 	}
 	return *this;
 }
 
-Conf::Conf() : Location(), listen(), server_name("localhost"),  client_body_buffer_size(4096), keep_time_alive(60)
+Conf::Conf() : Location(), listen(), server_name("localhost"),  client_body_buffer_size(4096), keep_time_alive(60), error_pages()
 {
 	std::cout << "------>conf init<------" << std::endl;
 }
@@ -61,7 +65,8 @@ Conf::~Conf()
 }
 
 Conf::Conf(Conf const &rhs) : Location(rhs), listen(rhs.listen), server_name(rhs.server_name),
-	client_body_buffer_size(rhs.client_body_buffer_size), keep_time_alive(rhs.keep_time_alive)
+	client_body_buffer_size(rhs.client_body_buffer_size), keep_time_alive(rhs.keep_time_alive),
+	error_pages(rhs.error_pages)
 {
 	std::cout << "------>conf ini<------" << std::endl;
 }
@@ -73,6 +78,8 @@ std::string	Location::getRoot() const { return root; }
 std::string	Location::getUpath() const { return upload_path; }
 std::string	Location::getCgi() const { return cgi_param; }
 std::string	Location::getBin() const { return bin; }
+std::pair<int, std::string> const &Location::getRedirection() const { return redirection; }
+
 
 
 Conf &Conf::operator=(Conf const &rhs)
@@ -85,6 +92,7 @@ Conf &Conf::operator=(Conf const &rhs)
 		server_name = rhs.server_name;
 		client_body_buffer_size = rhs.client_body_buffer_size;
 		keep_time_alive = rhs.keep_time_alive;
+		error_pages = rhs.error_pages;
 	}
 	return *this;
 }
@@ -187,6 +195,30 @@ int	Location::set_uploadpath(std::vector<std::string> const &where_path)
 	return 0;
 }
 
+int	Location::set_cgi(std::vector<std::string> const &which_cgi)
+{
+	if (which_cgi.size() == 1 || (which_cgi.size() == 2 && which_cgi.back() == ";"))
+		cgi_param = which_cgi.front();
+	else
+		throw(std::invalid_argument("Invalid configuration file: wrong cgi"));
+	if (cgi_param.size() && cgi_param[cgi_param.size() - 1] == ';')
+		cgi_param.erase(cgi_param.size() - 1);
+	return 0;
+}
+
+int	Location::set_redirection(std::vector<std::string> const &which_redirection)
+{
+	if (!which_redirection.size() || which_redirection[0].find_first_not_of("0123456789") != std::string::npos
+		|| (which_redirection.size() > 2 && which_redirection[2] != ";"))
+				throw(std::invalid_argument("Invalid configuration file: wrong redirection"));
+	this->redirection.first = std::atoi(which_redirection[0].c_str());
+	if (which_redirection.size() > 1)
+		this->redirection.second = which_redirection[1];
+	if (this->redirection.second.size() && this->redirection.second[this->redirection.second.size() - 1] == ';')
+		this->redirection.second.erase(this->redirection.second.size() - 1);
+	return 0;
+}
+
 int	Location::set_locations(std::vector<std::string> const &which_locations, std::ifstream &ifs)
 {
 	std::string		dst;
@@ -235,22 +267,13 @@ int	Location::set_locations(std::vector<std::string> const &which_locations, std
 			loc.set_cgi(row.second);
 		else if (row.first == "location")
 			loc.set_locations(row.second, ifs);
+		else if (row.first == "return")
+			loc.set_redirection(row.second);
 		else
 			throw(std::invalid_argument("Invalid configuration file: unknown rule " + row.first));
 		if (bkt == 0)
 			break ;
     }
-	return 0;
-}
-
-int	Location::set_cgi(std::vector<std::string> const &which_cgi)
-{
-	if (which_cgi.size() == 1 || (which_cgi.size() == 2 && which_cgi.back() == ";"))
-		cgi_param = which_cgi.front();
-	else
-		throw(std::invalid_argument("Invalid configuration file: wrong cgi"));
-	if (cgi_param.size() && cgi_param[cgi_param.size() - 1] == ';')
-		cgi_param.erase(cgi_param.size() - 1);
 	return 0;
 }
 
@@ -276,6 +299,30 @@ int	Conf::set_keep_time_alive(std::vector<std::string> const &which_time)
 	return 0;
 }
 
+int	Conf::set_error_page(std::vector<std::string> const &what_error)
+{
+	int							i = 0;
+	std::pair<int, std::string> row;
+
+	for (std::vector<std::string>::const_iterator it = what_error.begin(); it < what_error.end(); ++it)
+	{
+		if (i % 2 == 0)
+		{
+			if (it->find_first_not_of("0123456789") != std::string::npos)
+				throw(std::invalid_argument("Invalid configuration file: wrong error_page code"));
+			row.first = std::atoi(it->c_str());
+		}
+		else
+		{
+			if (access(it->c_str(), F_OK | R_OK))
+				throw(std::invalid_argument("Invalid configuration file: wrong error_page path"));
+			row.second = *it;
+			this->error_pages.insert(row);
+		}
+		++i;
+	}
+	return 0;
+}
 
 int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> &configs_for_servers)
 {
@@ -339,6 +386,10 @@ int	Conf::ConfigCreator::fulfil_conf(std::string const &path, std::vector<Conf> 
 			configs_for_servers.back().set_buf_size(row.second);
 		else if (row.first == "keepalive_timeout")
 			configs_for_servers.back().set_keep_time_alive(row.second);
+		else if (row.first == "error_page")
+			configs_for_servers.back().set_error_page(row.second);
+		else if (row.first == "return")
+			configs_for_servers.back().set_redirection(row.second);
 		else
 			throw(std::invalid_argument("Invalid configuration file: unknown rule " + row.first));
     }

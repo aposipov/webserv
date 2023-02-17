@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/12 10:43:19 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/17 13:46:15 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,6 +141,7 @@ int	Server::get_request(int	connfd)
 		{
 			//send wrong request
 			Buf.clear();
+			client.setTimeout(-1);
 			return (-1);
 		}
 		if (Buf.size() - req_lenght - 4 < (std::size_t)std::atol(Buf.substr(mess_lenght + 15).c_str()))
@@ -155,13 +156,20 @@ int	Server::get_request(int	connfd)
 	return (1);
 }
 
-int Server::choose_path(Response &response)
+int Server::choose_path(Response &response, std::string const &method)
 {
 	std::string	const &req_path = response.getPath();
+	struct stat sb;
+	std::string path = ((method == "GET") ? response.getSettings().root : response.getSettings().upload_path) + req_path;
+
+	stat(path.c_str(), &sb);
+
 	if (req_path.size() && req_path[req_path.size() - 1] == '/')
-		response.setPath(response.getSettings().root + req_path + response.getSettings().index);
+		response.setPath(path + response.getSettings().index);
+	else if (sb.st_mode & S_IFDIR && response.getSettings().index.size())
+		response.setPath(path + "/" + response.getSettings().index);
 	else
-		response.setPath(response.getSettings().root + req_path);
+		response.setPath(path);
 	return 0;
 }
 
@@ -195,15 +203,25 @@ int	 Server::manage_get(Client &client)
 
 	page.append("HTTP/1.1 200 OK\r\n");
 	page.append("Server: " + this->my_config.server_name);
+	
+	if (client.getResponseToSet().getSettings().redirection.first)
+	{
+		int code = client.getResponseToSet().getSettings().redirection.first;
+		if (code % 400)
+			client.getResponseToSet().error_response(code, this->my_config.error_pages.find(code)->second);
+		else
+			client.getResponseToSet().fillRedirection();
+		return 0;
+	}
 
 	ifs.open(client.getResponseToSet().getPath().c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
 	{
 		std::cout << "Not open " << client.getResponseToSet().getSettings().autoindex << " " << client.getResponseToSet().getSettings().methods << std::endl;
-		if (client.getResponseToSet().getSettings().autoindex && client.getResponseToSet().getSettings().methods > 3)
-			client.getResponseToSet().autoindex();
-		else
-			client.getResponseToSet().error_response(404);
+		if (!(client.getResponseToSet().getSettings().autoindex && client.getResponseToSet().getSettings().methods > 3))
+			if (!client.getResponseToSet().autoindex())
+				return 0;
+		client.getResponseToSet().error_response(404, this->my_config.error_pages.find(404)->second);
 	}
 	else
 	{
@@ -234,6 +252,53 @@ int	 Server::manage_get(Client &client)
 	return 0;
 }
 
+int Server::manage_post(Client &client)
+{
+	Request const &request = client.getReqest();
+	std::string &page = client.getResponseToSet().getContentToFill();
+	std::ofstream ofs;
+
+	ofs.open(client.getResponseToSet().getPath().c_str());
+
+	if (!ofs.is_open())
+	{
+		client.getResponseToSet().error_response(403, this->my_config.error_pages.find(403)->second);
+		return 1;
+	}
+	ofs << request.getContent();
+	ofs.close();
+	page.append("HTTP/1.1 200 OK\r\n");
+	page.append("Server: " + this->my_config.server_name);
+	if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
+		page.append("Connection: close\r\n");
+	else
+		page.append("Connection: keep-alive\r\n");
+	page.append("\r\n");
+
+	return 0;
+}
+
+int Server::manage_delete(Client &client)
+{
+	Request const &request = client.getReqest();
+	std::string &page = client.getResponseToSet().getContentToFill();
+
+	if (std::remove(client.getResponseToSet().getPath().c_str()))
+	{
+		client.getResponseToSet().error_response(403, this->my_config.error_pages.find(403)->second);
+		return 1;
+	}
+	page.append("HTTP/1.1 200 OK\r\n");
+	page.append("Server: " + this->my_config.server_name);
+	if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
+		page.append("Connection: close\r\n");
+	else
+		page.append("Connection: keep-alive\r\n");
+	page.append("\r\n");
+
+	return 0;
+}
+
 int	Server::manage_request(int connfd)
 {
 	Client	&client = clients.at(connfd);
@@ -243,17 +308,20 @@ int	Server::manage_request(int connfd)
 	client.getResponseToSet().setPath(client.getReqest().getHeader("Path").first);
 	client.getResponseToSet().setSettings(this->my_config);
 	this->set_settings(client, my_config.locations);
-	choose_path(client.getResponseToSet());
+	choose_path(client.getResponseToSet(), method.first);
 	if (method.second == false || tmp != "HTTP/1.1")
-		client.getResponseToSet().error_response(400);
+		client.getResponseToSet().error_response(404, this->my_config.error_pages.find(404)->second);
 	else if (method.first == "GET" && client.getResponseToSet().getSettings().getMethods() > 3)
 		this->manage_get(client);
-	else if (method.first == "POST")
-		;
-	else if (method.first == "DELETE")
-		std::cout << "del \n";
+	else if (method.first == "POST" && (client.getResponseToSet().getSettings().getMethods() == 2
+			|| client.getResponseToSet().getSettings().getMethods() == 3 || client.getResponseToSet().getSettings().getMethods() > 5))
+		this->manage_post(client);
+	else if (method.first == "DELETE" && (client.getResponseToSet().getSettings().getMethods() == 1
+			|| client.getResponseToSet().getSettings().getMethods() == 3 || client.getResponseToSet().getSettings().getMethods() == 5
+			|| client.getResponseToSet().getSettings().getMethods() == 7))
+		this->manage_delete(client);
 	else
-		client.getResponseToSet().error_response(400);
+		client.getResponseToSet().error_response(405, this->my_config.error_pages.find(405)->second);
 	client.clearRequest();
 	return (connfd);
 }
@@ -288,4 +356,3 @@ int	Server::action_response(int connfd)
 	}
 	return (0);
 }
-

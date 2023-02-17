@@ -22,8 +22,8 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 
-//#include <sys/event.h>
 #include <sys/time.h>
 
 #include "Conf.hpp"
@@ -59,7 +59,10 @@ class Server
 
 	Server();
 	int	manage_get(Client &client);
-	int choose_path(Response &response);
+	int manage_post(Client &client);
+	int manage_delete(Client &client);
+
+	int choose_path(Response &response, std::string const &method);
 	int	set_settings(Client &client, std::map<std::string, Location> const &loc);
 
 

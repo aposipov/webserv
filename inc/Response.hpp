@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:47:27 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/11 15:15:31 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/14 15:21:12 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,8 +41,9 @@ class Response
 
 	std::string	getHeader(std::string const &header) const;
 
-	int	error_response(int code = 404);
+	int	error_response(int code, std::string const &path_to_page);
 	int	autoindex();
+	int	fillRedirection();
 
 	private:
 

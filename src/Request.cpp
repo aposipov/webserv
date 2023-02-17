@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:40:04 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/08 02:18:41 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/12 16:51:03 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,6 +75,8 @@ std::pair<std::string, bool>	Request::getHeader(std::string const &header) const
 		return std::pair<std::string, bool>("", false);
 	return std::pair<std::string, bool>(it->second, true);
 }
+
+std::string	const &Request::getContent() const { return this->content; }
 
 void	Request::clear()
 {

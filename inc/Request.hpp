@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:34:33 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/06 02:47:13 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/12 16:50:47 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@ class Request
 	Request	&operator=(Request const &rhs);
 
 	std::pair<std::string, bool>	getHeader(std::string const &header) const;
+
+	std::string	const &getContent() const;
 
 	void	clear();
 
