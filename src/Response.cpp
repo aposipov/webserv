@@ -145,7 +145,7 @@ int	Response::error_response(int code, std::string const &path_to_page)
 	std::ifstream	ifs;
 
 	if (path_to_page != "")
-		ifs.open(path_to_page);
+		ifs.open(path_to_page.c_str());
 	if (!ifs.is_open())
 	{
 		if (code == 404)

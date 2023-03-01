@@ -22,6 +22,8 @@
 
 #include <strings.h>
 
+#include <ctime>
+
 class Client
 {
 
@@ -52,7 +54,7 @@ class Client
 	std::string			my_message;
 	Request				request;
 	Response			response;
-	long				my_timeout;
+	std::time_t				my_timeout;
 
 };
 

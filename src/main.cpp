@@ -73,7 +73,6 @@ int	create_and_launch_server(std::string path)
 					continue ;
 				serv_child_fds.insert(std::pair<int, Server*>(connfd, acceptin_server));
 				FD_SET(connfd, &copy);
-				FD_CLR(i, &who_read);
 				if (max_fd < connfd)
 					max_fd = connfd;
 				std::cout << "New max_fd = " << max_fd << std::endl;break;
@@ -89,11 +88,9 @@ int	create_and_launch_server(std::string path)
 				serv_child_fds.at(i)->action_response(i);
 			if (serv_base_fds.find(i) == serv_base_fds.end() && serv_child_fds.at(i)->check_timeout(i))
 			{
-				serv_child_fds.erase(i);
 				serv_child_fds.at(i)->erase_client(i);
+				serv_child_fds.erase(i);
 				FD_CLR(i, &copy);
-				FD_CLR(i, &who_read);
-				FD_CLR(i, &who_write);
 				while (!FD_ISSET(max_fd, &copy))
 					--max_fd;
 			}

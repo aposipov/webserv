@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <ctime>
+
 
 class Server;
 
@@ -104,7 +106,7 @@ class Conf : public Location
 	listen_t	listen;
 	std::string	server_name;
 	std::size_t	client_body_buffer_size;
-	std::time_t	keep_time_alive;					
+	std::time_t		keep_time_alive;					
 	error_t		error_pages;
 
 };

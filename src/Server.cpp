@@ -274,7 +274,8 @@ int	Server::run_cgi(Client &client)
 	Request const &request = client.getReqest();
 	Response 	&response = client.getResponseToSet();
 	(void)request;
-	execve(response.getSettings().cgi_param.c_str(), 0, 0);
+	(void)response;
+	// execve(response.getSettings().cgi_param.c_str(), 0, 0);
 	return 0;
 }
 
