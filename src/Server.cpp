@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/18 00:49:53 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/02/26 01:48:01 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,13 @@ Server::~Server()
 	std::cout << "Server finished" << std::endl;
 }
 
+std::string	Server::get_my_name() const { return my_config.server_name; }
+
+int	Server::erase_client(int connfd)
+{
+	this->clients.erase(connfd);
+	return 0;
+}
 
 uint32_t Server::inet_atonl(std::string const &addr) const
 {
@@ -216,13 +223,14 @@ int	 Server::manage_get(Client &client)
 
 	if (client.getResponseToSet().getSettings().cgi_param.size())
 	{
+		std::cout << "cgi branch\n";
+		exit(1);
 		int pid = fork();
 		if (pid == 0)
 			this->run_cgi(client);
 		return 0;
 	}
 		 
-
 	ifs.open(client.getResponseToSet().getPath().c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
 	{
@@ -263,7 +271,10 @@ int	 Server::manage_get(Client &client)
 
 int	Server::run_cgi(Client &client)
 {
-
+	Request const &request = client.getReqest();
+	Response 	&response = client.getResponseToSet();
+	(void)request;
+	execve(response.getSettings().cgi_param.c_str(), 0, 0);
 	return 0;
 }
 

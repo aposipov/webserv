@@ -48,20 +48,24 @@ class Server
 
 	std::vector<int> const	&get_listen_fd() const;
 
-	uint32_t	inet_atonl(std::string const &addr) const;
 
 	int	action_response(int connfd);
 
 	int	check_timeout(int connfd);
 
+	std::string	get_my_name() const;
+
+	int	erase_client(int connfd);
 
 	private:
 
 	Server();
-	int	manage_get(Client &client);
-	int manage_post(Client &client);
-	int manage_delete(Client &client);
-	int	run_cgi(Client &client);
+	
+	uint32_t	inet_atonl(std::string const &addr) const;
+	int			manage_get(Client &client);
+	int			manage_post(Client &client);
+	int			manage_delete(Client &client);
+	int			run_cgi(Client &client);
 
 	int choose_path(Response &response, std::string const &method);
 	int	set_settings(Client &client, std::map<std::string, Location> const &loc);

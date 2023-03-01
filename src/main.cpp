@@ -24,8 +24,9 @@ int	create_and_launch_server(std::string path)
 	//Далее запуск сервера
 
 	std::vector<Server>	servers;
-	std::map<int, Server*> serv_base_fds;
+	std::multimap<int, Server*> serv_base_fds;
 	std::map<int, Server*> serv_child_fds;
+	std::map<std::string, Server*>	serv_by_name;
 	fd_set	who_read, who_write, copy;
 	int max_fd = 0;
 	FD_ZERO(&copy);
@@ -35,6 +36,8 @@ int	create_and_launch_server(std::string path)
 		for (std::vector<Conf>::iterator it = configs_for_servers.begin(); it < configs_for_servers.end(); ++it)
 		{
 			servers.push_back(Server(*it));
+			if (serv_by_name.find(servers.back().get_my_name()) == serv_by_name.end())
+				serv_by_name.insert(std::pair<std::string, Server*>(servers.back().get_my_name(), &servers.back()));
 			for (std::vector<int>::const_iterator ite = servers.back().get_listen_fd().begin(); ite < servers.back().get_listen_fd().end(); ++ite)
 			{
 				serv_base_fds.insert(std::pair<int, Server*>(*ite, &servers.back()));
@@ -64,7 +67,7 @@ int	create_and_launch_server(std::string path)
 				continue;
 			if (serv_base_fds.find(i) != serv_base_fds.end())
 			{
-				Server *acceptin_server = serv_base_fds.at(i);
+				Server *acceptin_server = serv_base_fds.find(i)->second;
 				int connfd = acceptin_server->add_new_client(i);
 				if (connfd <= 0)
 					continue ;
@@ -87,6 +90,7 @@ int	create_and_launch_server(std::string path)
 			if (serv_base_fds.find(i) == serv_base_fds.end() && serv_child_fds.at(i)->check_timeout(i))
 			{
 				serv_child_fds.erase(i);
+				serv_child_fds.at(i)->erase_client(i);
 				FD_CLR(i, &copy);
 				FD_CLR(i, &who_read);
 				FD_CLR(i, &who_write);
