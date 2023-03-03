@@ -44,6 +44,7 @@ Request::Request(std::string const &request)
 	}
 	if (request.size() - m > 3)
 		content = request.substr(m + 3);
+	this->query_string();
 	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it)
 		std::cout << it->first << " ::----:: " << it->second << std::endl;
 }
@@ -68,6 +69,21 @@ Request	&Request::operator=(Request const &rhs)
 	return *this;
 }
 
+int	Request::query_string()
+{
+	std::pair<std::string, std::string> row("QUERY_STRING", "");
+	std::string &path = this->headers["Path"];
+	std::string::size_type	index = path.find('?');
+	if (index != std::string::npos)
+	{
+		row.second = path.substr(index + 1);
+		path.erase(index);
+	}
+	headers.insert(row);
+	return 0;
+}
+
+
 std::pair<std::string, bool>	Request::getHeader(std::string const &header) const
 {
 	std::map<std::string, std::string>::const_iterator it = headers.find(header);
@@ -75,6 +91,17 @@ std::pair<std::string, bool>	Request::getHeader(std::string const &header) const
 		return std::pair<std::string, bool>("", false);
 	return std::pair<std::string, bool>(it->second, true);
 }
+
+std::map<std::string, std::string>::const_iterator Request::headers_begin() const
+{
+	return this->headers.begin();
+}
+
+std::map<std::string, std::string>::const_iterator Request::headers_end() const
+{
+	return this->headers.end();
+}
+
 
 std::string	const &Request::getContent() const { return this->content; }
 

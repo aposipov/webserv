@@ -11,6 +11,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <algorithm>
 
 #include <unistd.h>
 #include <fcntl.h>

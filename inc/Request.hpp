@@ -34,7 +34,12 @@ class Request
 
 	void	clear();
 
+	std::map<std::string, std::string>::const_iterator headers_begin() const;
+	std::map<std::string, std::string>::const_iterator headers_end() const;
+
 	private:
+
+	int	query_string();
 
 	std::map<std::string, std::string>	headers;
 	std::string							content;

@@ -223,11 +223,12 @@ int	 Server::manage_get(Client &client)
 
 	if (client.getResponseToSet().getSettings().cgi_param.size())
 	{
-		std::cout << "cgi branch\n";
-		exit(1);
 		int pid = fork();
+		std::cout << "pid = " << pid << std::endl;
 		if (pid == 0)
 			this->run_cgi(client);
+		page.clear();
+		sleep(10);
 		return 0;
 	}
 		 
@@ -273,9 +274,27 @@ int	Server::run_cgi(Client &client)
 {
 	Request const &request = client.getReqest();
 	Response 	&response = client.getResponseToSet();
-	(void)request;
-	(void)response;
-	// execve(response.getSettings().cgi_param.c_str(), 0, 0);
+	std::string path = response.getPath();
+	
+	char const * argv[3] = {this->my_config.server_name.c_str(), path.c_str(), 0};
+	std::vector<std::vector<char> > envp;
+
+	for (std::map<std::string, std::string>::const_iterator it = request.headers_begin(), ite = request.headers_end();
+		it != ite; ++it)
+	{
+		std::string env(it->first + "=" + it->second);
+		std::vector<char> tmp(env.begin(), env.end());
+		envp.push_back(tmp);
+	}
+	std::vector<char*> array(envp.size() + 1);
+	for (std::vector<char*>::size_type i = 0; i < array.size(); ++i)
+		array[i] = envp[i].data();
+	array[array.size()] = 0;
+	dup2(client.get_myFd(), STDOUT_FILENO);
+	send(client.get_myFd(), response.getContentToFill().c_str(), response.getContentToFill().size(), MSG_DONTWAIT);
+	if (execve(response.getSettings().cgi_param.c_str(), const_cast<char* const*>(argv), reinterpret_cast<char**>(array.data())))
+		std::cerr << "Error with running " << response.getSettings().cgi_param << " " << argv[1] << std::endl;
+	exit(0);
 	return 0;
 }
 
