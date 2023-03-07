@@ -89,6 +89,24 @@ uint32_t Server::inet_atonl(std::string const &addr) const
     return ipv4;
 }
 
+std::string	Server::get_socket_port(int fd) const
+{
+	struct sockaddr_in sin;
+	socklen_t len = sizeof(sin);
+	getsockname(fd, (struct sockaddr *)&sin, &len);
+	std::stringstream	ss;
+	ss << ntohs(sin.sin_port);
+	return (ss.str());
+}
+
+std::string	Server::get_only_name(std::string path) const
+{
+	if (path.rfind('/'))
+		path.erase(0, path.rfind('/') + 1);
+	return path;
+}
+
+
 int	Server::add_new_client(int const accept_fd)
 {
 	std::pair<int, Client> tmp;
@@ -187,7 +205,7 @@ int	Server::set_settings(Client &client, std::map<std::string, Location> const &
 
 	for (std::map<std::string, Location>::const_iterator it = loc.begin(); it != loc.end(); ++it)
 	{
-		if (req_path.find(it->first) == 0 || req_path.find(it->first) == req_path.size() - it->first.size()
+		if (req_path.find(it->first) < req_path.size() /*|| req_path.find(it->first) == req_path.size() - it->first.size()*/
 			|| (req_path.size() && req_path[req_path.size() - 1] == '/'
 			&& client.getResponseToSet().getSettings().index.find(it->first) == client.getResponseToSet().getSettings().index.size() - it->first.size()))
 		{
@@ -252,7 +270,7 @@ int	 Server::manage_get(Client &client)
 		std::stringstream ss;
 		ss << size;
 		std::string sz = ss.str();
-		if (request.getHeader("Path").first.find(".jpg") != std::string::npos)
+		if (client.getResponseToSet().getPath().find(".jpg") != std::string::npos)
 			page.append("Content-Type: image/jpeg\r\n");
 		else 
 			page.append("Content-Type: text/html\r\n");
@@ -275,9 +293,12 @@ int	Server::run_cgi(Client &client)
 	Request const &request = client.getReqest();
 	Response 	&response = client.getResponseToSet();
 	std::string path = response.getPath();
+	std::string	&page = response.getContentToFill();
 	
 	char const * argv[3] = {this->my_config.server_name.c_str(), path.c_str(), 0};
 	std::vector<std::vector<char> > envp;
+
+	add_cgi_variables(client, envp);
 
 	for (std::map<std::string, std::string>::const_iterator it = request.headers_begin(), ite = request.headers_end();
 		it != ite; ++it)
@@ -291,10 +312,55 @@ int	Server::run_cgi(Client &client)
 		array[i] = envp[i].data();
 	array[array.size()] = 0;
 	dup2(client.get_myFd(), STDOUT_FILENO);
-	send(client.get_myFd(), response.getContentToFill().c_str(), response.getContentToFill().size(), MSG_DONTWAIT);
+
+	page.append("Content-Type: text/html\r\n");
+	if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
+		page.append("Connection: close\r\n");
+	else
+		page.append("Connection: keep-alive\r\n");
+	page.append("\r\n");
+
+	std::size_t	sz = 0;
+	while (sz < response.getContentToFill().size())
+	{
+		std::size_t returned_size;
+		returned_size = send(client.get_myFd(), response.getContentToFill().substr(sz).c_str(), my_config.client_body_buffer_size, MSG_DONTWAIT);
+		sz += returned_size;
+		if (returned_size < 0)
+			exit(1);
+	}
 	if (execve(response.getSettings().cgi_param.c_str(), const_cast<char* const*>(argv), reinterpret_cast<char**>(array.data())))
 		std::cerr << "Error with running " << response.getSettings().cgi_param << " " << argv[1] << std::endl;
-	exit(0);
+	exit(1);
+	return 0;
+}
+
+int	Server::add_cgi_variables(Client &client, std::vector<std::vector<char> > &envp)
+{
+	(void)envp;
+
+	std::vector<std::string> envs;
+
+	envs.push_back("SERVER_SOFTWARE=webserver_4.2");
+	envs.push_back("SERVER_NAME=" + my_config.server_name);
+	envs.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	envs.push_back("SERVER_PORT=" + this->get_socket_port(client.get_myFd()));
+	envs.push_back("PATH_INFO=" + client.getResponseToSet().getPath());
+	envs.push_back("PATH_TRANSLATED=" + client.getResponseToSet().getPath());
+	envs.push_back("SCRIPT_NAME=" + this->get_only_name(client.getResponseToSet().getPath()));
+	// envs.push_back("REMOTE_HOST=");
+	// envs.push_back("REMOTE_ADDR=");
+	// envs.push_back("AUTH_TYPE=");
+	// envs.push_back("REMOTE_USER=");
+	// envs.push_back("REMOTE_IDENT=");
+	// envs.push_back("CONTENT_TYPE=");
+	// envs.push_back("CONTENT_LENGTH=");
+	// envs.push_back("HTTP_ACCEPT=");
+	// envs.push_back("HTTP_USER_AGENT=");
+	envs.push_back("REDIRECT_STATUS=");
+
+	for (std::vector<std::string>::iterator it = envs.begin(); it < envs.end(); ++it)
+		envp.push_back(std::vector<char>(it->begin(), it->end()));
 	return 0;
 }
 
@@ -348,8 +414,8 @@ int Server::manage_delete(Client &client)
 int	Server::manage_request(int connfd)
 {
 	Client	&client = clients.at(connfd);
-	std::string tmp = client.getReqest().getHeader("Protocol").first;
-	std::pair<std::string, bool>	method = client.getReqest().getHeader("Method");
+	std::string tmp = client.getReqest().getHeader("SERVER_PROTOCOL").first;
+	std::pair<std::string, bool>	method = client.getReqest().getHeader("REQUEST_METHOD");
 	
 	client.getResponseToSet().setPath(client.getReqest().getHeader("Path").first);
 	client.getResponseToSet().setSettings(this->my_config);
@@ -381,7 +447,7 @@ int	Server::action_response(int connfd)
 
 	std::cout << "Hello from action_response " << client.get_myFd() << " " << content.size() << std::endl;
 
-	//здесь на основе response обрабатывается ответ
+	//отправка ответа
 	if (content.size())
 	{
 		sended_size = send(connfd, content.c_str() + response.getSendedSize(),

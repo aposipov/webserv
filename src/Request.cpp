@@ -25,9 +25,9 @@ Request::Request(std::string const &request)
 
 	if (n != std::string::npos && l != std::string::npos)
 	{
-		row.first = "Method"; row.second = request.substr(0, request.find(' '));
+		row.first = "REQUEST_METHOD"; row.second = request.substr(0, request.find(' '));
 		headers.insert(row);
-		row.first = "Protocol"; row.second = bottom.substr(n + 1, m - n - 1);
+		row.first = "SERVER_PROTOCOL"; row.second = bottom.substr(n + 1, m - n - 1);
 		headers.insert(row);
 		row.first = "Path"; row.second = bottom.substr(request.find(' ') + 1, n - l - 1);
 		headers.insert(row);

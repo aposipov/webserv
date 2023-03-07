@@ -68,9 +68,13 @@ class Server
 	int			manage_post(Client &client);
 	int			manage_delete(Client &client);
 	int			run_cgi(Client &client);
+	int			add_cgi_variables(Client &client, std::vector<std::vector<char> > &envp);
+
+	std::string	get_socket_port(int fd) const;
 
 	int choose_path(Response &response, std::string const &method);
 	int	set_settings(Client &client, std::map<std::string, Location> const &loc);
+	std::string	get_only_name(std::string path) const;
 
 
 	std::vector<int>		listen_fd;
