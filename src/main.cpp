@@ -60,7 +60,7 @@ int	create_and_launch_server(std::string path)
 		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;
 		for (int i = 0; i <= max_fd; ++i)
 			std::cout << i << " Is_set_read " << FD_ISSET(i, &who_read) << " | Is_set_write " << FD_ISSET(i, &who_write) << std::endl;
-		sleep(2);
+		// sleep(2);
 		for (int i = 0; i <= max_fd; ++i)
 		{
 			if (!FD_ISSET(i, &who_read) && !FD_ISSET(i, &who_write) && serv_child_fds.find(i) == serv_child_fds.end())
@@ -84,7 +84,7 @@ int	create_and_launch_server(std::string path)
 				if (cont_rem > 0)
 					procc_serv->manage_request(i);
 			}
-			else
+			else if (FD_ISSET(i, &who_write))
 				serv_child_fds.at(i)->action_response(i);
 			if (serv_base_fds.find(i) == serv_base_fds.end() && serv_child_fds.at(i)->check_timeout(i))
 			{
@@ -105,13 +105,17 @@ int main(int ac, char **av)
 	std::cout << *av << std::endl;
 
 	std::cout << "Hello webserv!" << std::endl;
-	if (ac != 2 || access(av[1], F_OK | R_OK))
-		std::cerr << "Error: ./webserv <config_file>" << std::endl;
+	if (ac > 2)
+		std::cerr << "Error: too many arguments" << std::endl;
 	else
 	{
 		try
 		{
-			create_and_launch_server(av[1]);
+			if (ac == 2)
+				create_and_launch_server(av[1]);
+			else
+				create_and_launch_server("./config/test.conf");
+
 		}
 		catch(const std::exception& e)
 		{

@@ -106,7 +106,6 @@ std::string	Server::get_only_name(std::string path) const
 	return path;
 }
 
-
 int	Server::add_new_client(int const accept_fd)
 {
 	std::pair<int, Client> tmp;
@@ -225,10 +224,9 @@ int	 Server::manage_get(Client &client)
 	std::string &page = client.getResponseToSet().getContentToFill();
 	std::ifstream	ifs;
 	std::string 	dst;
-
-	page.append("HTTP/1.1 200 OK\r\n");
-	page.append("Server: " + this->my_config.server_name);
 	
+	page.append("Server: " + this->my_config.server_name + "\r\n");
+
 	if (client.getResponseToSet().getSettings().redirection.first)
 	{
 		int code = client.getResponseToSet().getSettings().redirection.first;
@@ -241,12 +239,58 @@ int	 Server::manage_get(Client &client)
 
 	if (client.getResponseToSet().getSettings().cgi_param.size())
 	{
+		int	pip[2];
+		if (pipe(pip))
+		{
+			client.getResponseToSet().error_response(502, this->my_config.error_pages.find(502)->second);
+			return 0;
+		}
 		int pid = fork();
-		std::cout << "pid = " << pid << std::endl;
+		if (pid < 0)
+		{
+			client.getResponseToSet().error_response(502, this->my_config.error_pages.find(502)->second);
+			return 0;
+		}
+
 		if (pid == 0)
+		{
+			close(pip[0]);
+			dup2(pip[1], STDOUT_FILENO);
 			this->run_cgi(client);
-		page.clear();
-		sleep(10);
+		}
+		close(pip[1]);
+		char buf[BUFFER_SIZE];
+		int n;
+		while ((n = read(pip[0], buf, BUFFER_SIZE - 1)) > 0)
+			dst.append(buf, n);
+		
+		close(pip[0]);
+		if (dst.find("Status:") < dst.find("/r/n/r/n") && dst.substr(dst.find("Status: ") + 8, 1) == "4")
+		{
+			int code = std::atoi(dst.substr(dst.find("Status: ") + 8, 3).c_str());
+			client.getResponseToSet().error_response(code,
+			this->my_config.error_pages.find(code)->second);
+			return 0;
+		}
+		page.insert(0, "HTTP/1.1 200 OK\r\n");
+		std::stringstream ss;
+		if (dst.find("\r\n\r\n") < dst.find("Content-Length:"))
+			ss << dst.substr(dst.find("\r\n\r\n") + 4).size();
+		else if (dst.find("\r\n\r\n") == std::string::npos)
+			ss << dst.size();
+		if (ss.str().size())
+			page.append("Content-Length: " + ss.str() + "\r\n");
+		if (dst.find("\r\n\r\n") < dst.find("Content-Type:"))
+			page.append("Content-Type: text/html\r\n");
+		if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
+			page.append("Connection: close\r\n");
+		else
+			page.append("Connection: keep-alive\r\n");
+		if (dst.find("\r\n\r\n") == std::string::npos)
+			page.append("\r\n");
+		page.append(dst);
+
+
 		return 0;
 	}
 		 
@@ -270,6 +314,7 @@ int	 Server::manage_get(Client &client)
 		std::stringstream ss;
 		ss << size;
 		std::string sz = ss.str();
+		page.insert(0, "HTTP/1.1 200 OK\r\n");
 		if (client.getResponseToSet().getPath().find(".jpg") != std::string::npos)
 			page.append("Content-Type: image/jpeg\r\n");
 		else 
@@ -293,7 +338,6 @@ int	Server::run_cgi(Client &client)
 	Request const &request = client.getReqest();
 	Response 	&response = client.getResponseToSet();
 	std::string path = response.getPath();
-	std::string	&page = response.getContentToFill();
 	
 	char const * argv[3] = {this->my_config.server_name.c_str(), path.c_str(), 0};
 	std::vector<std::vector<char> > envp;
@@ -311,27 +355,9 @@ int	Server::run_cgi(Client &client)
 	for (std::vector<char*>::size_type i = 0; i < array.size(); ++i)
 		array[i] = envp[i].data();
 	array[array.size()] = 0;
-	dup2(client.get_myFd(), STDOUT_FILENO);
 
-	page.append("Content-Type: text/html\r\n");
-	if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
-		page.append("Connection: close\r\n");
-	else
-		page.append("Connection: keep-alive\r\n");
-	page.append("\r\n");
-
-	std::size_t	sz = 0;
-	while (sz < response.getContentToFill().size())
-	{
-		std::size_t returned_size;
-		returned_size = send(client.get_myFd(), response.getContentToFill().substr(sz).c_str(), my_config.client_body_buffer_size, MSG_DONTWAIT);
-		sz += returned_size;
-		if (returned_size < 0)
-			exit(1);
-	}
 	if (execve(response.getSettings().cgi_param.c_str(), const_cast<char* const*>(argv), reinterpret_cast<char**>(array.data())))
-		std::cerr << "Error with running " << response.getSettings().cgi_param << " " << argv[1] << std::endl;
-	exit(1);
+		exit(1);
 	return 0;
 }
 
@@ -345,7 +371,7 @@ int	Server::add_cgi_variables(Client &client, std::vector<std::vector<char> > &e
 	envs.push_back("SERVER_NAME=" + my_config.server_name);
 	envs.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	envs.push_back("SERVER_PORT=" + this->get_socket_port(client.get_myFd()));
-	envs.push_back("PATH_INFO=" + client.getResponseToSet().getPath());
+	envs.push_back("PATH_INFO=");
 	envs.push_back("PATH_TRANSLATED=" + client.getResponseToSet().getPath());
 	envs.push_back("SCRIPT_NAME=" + this->get_only_name(client.getResponseToSet().getPath()));
 	// envs.push_back("REMOTE_HOST=");
@@ -360,7 +386,10 @@ int	Server::add_cgi_variables(Client &client, std::vector<std::vector<char> > &e
 	envs.push_back("REDIRECT_STATUS=");
 
 	for (std::vector<std::string>::iterator it = envs.begin(); it < envs.end(); ++it)
+	{
 		envp.push_back(std::vector<char>(it->begin(), it->end()));
+		std::cout << *it << std::endl;
+	}
 	return 0;
 }
 
@@ -369,6 +398,80 @@ int Server::manage_post(Client &client)
 	Request const &request = client.getReqest();
 	std::string &page = client.getResponseToSet().getContentToFill();
 	std::ofstream ofs;
+	std::string dst;
+
+	if (client.getResponseToSet().getSettings().getCgi().size())
+	{
+		int	pip[2];
+		if (pipe(pip))
+		{
+			client.getResponseToSet().error_response(502, this->my_config.error_pages.find(502)->second);
+			return 0;
+		}
+
+		{
+			int sz_1 = 0, sz_2;
+			while((sz_2 = write(pip[1], request.getContent().c_str() + sz_1, request.getContent().size() - sz_1)) > 0
+				&& request.getContent().size() - sz_1 > 0)
+				sz_1 += sz_2;
+			if (sz_1 - request.getContent().size() > 0)
+			{
+				close(pip[1]);
+				close(pip[0]);
+				client.getResponseToSet().error_response(502, this->my_config.error_pages.find(502)->second);
+				return 0;
+			}
+		}
+		int pid = fork();
+		if (pid < 0)
+		{
+			close(pip[1]);
+			close(pip[0]);
+			client.getResponseToSet().error_response(502, this->my_config.error_pages.find(502)->second);
+			return 0;
+		}
+		if (pid == 0)
+		{
+			dup2(pip[1], STDOUT_FILENO);
+			dup2(pip[0], STDIN_FILENO);
+			this->run_cgi(client);
+		}
+		close(pip[1]);
+		char buf[BUFFER_SIZE];
+		int n;
+		while ((n = read(pip[0], buf, BUFFER_SIZE - 1)) > 0)
+			dst.append(buf, n);
+		close(pip[0]);
+		
+		if (dst.find("Status:") < dst.find("/r/n/r/n") && dst.substr(dst.find("Status: ") + 8, 1) == "4")
+		{
+			int code = std::atoi(dst.substr(dst.find("Status: ") + 8, 3).c_str());
+			client.getResponseToSet().error_response(code,
+			this->my_config.error_pages.find(code)->second);
+			return 0;
+		}
+
+		page.insert(0, "HTTP/1.1 200 OK\r\n");
+		std::stringstream ss;
+		if (dst.find("\r\n\r\n") < dst.find("Content-Length:"))
+			ss << dst.substr(dst.find("\r\n\r\n") + 4).size();
+		else if (dst.find("\r\n\r\n") == std::string::npos)
+			ss << dst.size();
+		if (ss.str().size())
+			page.append("Content-Length: " + ss.str() + "\r\n");
+		if (dst.find("\r\n\r\n") < dst.find("Content-Type:"))
+			page.append("Content-Type: text/html\r\n");
+		if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
+			page.append("Connection: close\r\n");
+		else
+			page.append("Connection: keep-alive\r\n");
+		if (dst.find("\r\n\r\n") == std::string::npos)
+			page.append("\r\n");
+		page.append(dst);
+
+		return 0;
+
+	}
 
 	ofs.open(client.getResponseToSet().getPath().c_str());
 
@@ -379,7 +482,7 @@ int Server::manage_post(Client &client)
 	}
 	ofs << request.getContent();
 	ofs.close();
-	page.append("HTTP/1.1 200 OK\r\n");
+	page.append("HTTP/1.1 201 Created\r\n");
 	page.append("Server: " + this->my_config.server_name);
 	if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
 		page.append("Connection: close\r\n");
@@ -389,6 +492,36 @@ int Server::manage_post(Client &client)
 
 	return 0;
 }
+
+// int	Server::run_post_cgi(Client &client)
+// {
+// 	Request const &request = client.getReqest();
+// 	Response 	&response = client.getResponseToSet();
+// 	std::string path = response.getPath();
+	
+// 	char const * argv[3] = {this->my_config.server_name.c_str(), path.c_str(), 0};
+// 	std::vector<std::vector<char> > envp;
+
+// 	add_cgi_variables(client, envp);
+
+// 	for (std::map<std::string, std::string>::const_iterator it = request.headers_begin(), ite = request.headers_end();
+// 		it != ite; ++it)
+// 	{
+// 		std::string env(it->first + "=" + it->second);
+// 		std::vector<char> tmp(env.begin(), env.end());
+// 		envp.push_back(tmp);
+// 	}
+// 	std::vector<char*> array(envp.size() + 1);
+// 	for (std::vector<char*>::size_type i = 0; i < array.size(); ++i)
+// 		array[i] = envp[i].data();
+// 	array[array.size()] = 0;
+
+// 	if (execve(response.getSettings().cgi_param.c_str(), const_cast<char* const*>(argv), reinterpret_cast<char**>(array.data())))
+// 		exit(1);
+// 	return 0;
+
+// }
+
 
 int Server::manage_delete(Client &client)
 {
@@ -400,7 +533,7 @@ int Server::manage_delete(Client &client)
 		client.getResponseToSet().error_response(403, this->my_config.error_pages.find(403)->second);
 		return 1;
 	}
-	page.append("HTTP/1.1 200 OK\r\n");
+	page.append("HTTP/1.1 202 Accepted\r\n");
 	page.append("Server: " + this->my_config.server_name);
 	if (request.getHeader("Connection").second && request.getHeader("Connection").first == "close")
 		page.append("Connection: close\r\n");

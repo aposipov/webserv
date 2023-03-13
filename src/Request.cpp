@@ -40,7 +40,6 @@ Request::Request(std::string const &request)
 		row.first.erase(row.first.size() - 1);
 		row.second = request.substr(l + 1, m - l - 1);
 		headers.insert(row);
-		std::cout << n << " " << request.size() << std::endl;
 	}
 	if (request.size() - m > 3)
 		content = request.substr(m + 3);

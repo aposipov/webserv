@@ -83,21 +83,21 @@ int	Response::fillRedirection()
 	std::string const &direction = this->getSettings().getRedirection().second;
 
 	if (code == 300)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 300 Multiple Choices");
+		this->content.insert(0, "HTTP/1.1 300 Multiple Choices");
 	else if (code == 301)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 301 Moved Permanently");
+		this->content.insert(0, "HTTP/1.1 301 Moved Permanently");
 	else if (code == 302)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 302 Found");
+		this->content.insert(0, "HTTP/1.1 302 Found");
 	else if (code == 303)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 303 See Other");
+		this->content.insert(0, "HTTP/1.1 303 See Other");
 	else if (code == 303)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 304 Not Modified");
+		this->content.insert(0, "HTTP/1.1 304 Not Modified");
 	else if (code == 305)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 305 Use Proxy");
+		this->content.insert(0, "HTTP/1.1 305 Use Proxy");
 	else if (code == 307)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 307 Temporary Redirect");
+		this->content.insert(0, "HTTP/1.1 307 Temporary Redirect");
 	else if (code == 308)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 308 Permanent Redirect");
+		this->content.insert(0, "HTTP/1.1 308 Permanent Redirect");
 	this->content.append("Location: " + direction + "\r\n");
 	this->content.append("\r\n");
 	return 0;
@@ -127,7 +127,7 @@ int	Response::autoindex()
 	tmp += "</big></html>\n";
 	ss << tmp.size();
 	sz = ss.str();
-	this->content.replace(0, this->content.find('\r'), "HTTP/1.1 404 Not Found");
+	this->content.insert(0, "HTTP/1.1 404 Not Found");
 	this->content.append("Content-Type: text/html\r\n");
 	this->content.append("Accept-Ranges: bytes\r\n");
 	this->content.append("Content-Length: " + sz + "\r\n");
@@ -156,6 +156,8 @@ int	Response::error_response(int code, std::string const &path_to_page)
 			error_page = "<!DOCTYPE html>\n<html><div id=\"main\"><div class=\"fof\"><h1>Error 405 - Method not allowed</h1></div></div></html>\n";
 		else if (code == 403)
 			error_page = "<!DOCTYPE html>\n<html><div id=\"main\"><div class=\"fof\"><h1>Error 403 - Forbidden</h1></div></div></html>\n";
+		else if (code == 502)
+			error_page = "<!DOCTYPE html>\n<html><div id=\"main\"><div class=\"fof\"><h1>502 Bad Gateway</h1></div></div></html>\n";
 	}
 	else
 	{
@@ -171,13 +173,13 @@ int	Response::error_response(int code, std::string const &path_to_page)
 	}
 	
 	if (code == 404)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 404 Not Found");
+		this->content.insert(0, "HTTP/1.1 404 Not Found");
 	else if (code == 400)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 400 Bad Request");
+		this->content.insert(0, "HTTP/1.1 400 Bad Request");
 	else if (code == 405)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 405 Method Not Allowed");
+		this->content.insert(0, "HTTP/1.1 405 Method Not Allowed");
 	else if (code == 403)
-		this->content.replace(0, this->content.find('\r'), "HTTP/1.1 403 Forbidden");
+		this->content.insert(0, "HTTP/1.1 403 Forbidden");
 
 	ss << error_page.size();
 	sz = ss.str();

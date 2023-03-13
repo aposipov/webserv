@@ -31,6 +31,7 @@
 #include "Conf.hpp"
 #include "Client.hpp"
 
+#define BUFFER_SIZE 4096
 
 class Server
 {
@@ -69,6 +70,7 @@ class Server
 	int			manage_delete(Client &client);
 	int			run_cgi(Client &client);
 	int			add_cgi_variables(Client &client, std::vector<std::vector<char> > &envp);
+	int			run_post_cgi(Client &client);
 
 	std::string	get_socket_port(int fd) const;
 
