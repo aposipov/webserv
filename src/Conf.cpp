@@ -301,25 +301,24 @@ int	Conf::set_keep_time_alive(std::vector<std::string> const &which_time)
 
 int	Conf::set_error_page(std::vector<std::string> const &what_error)
 {
-	int							i = 0;
 	std::pair<int, std::string> row;
 
 	for (std::vector<std::string>::const_iterator it = what_error.begin(); it < what_error.end(); ++it)
 	{
-		if (i % 2 == 0)
+		std::cout << *it << std::endl;
+		if ((it - what_error.begin()) % 2 == 0 && *it != ";")
 		{
 			if (it->find_first_not_of("0123456789") != std::string::npos)
 				throw(std::invalid_argument("Invalid configuration file: wrong error_page code"));
 			row.first = std::atoi(it->c_str());
 		}
-		else
+		else if (*it != ";")
 		{
-			if (access(it->c_str(), F_OK | R_OK))
+			if (it->find(";") ? access(it->substr(0, it->size() - 1).c_str(), F_OK | R_OK) : access(it->c_str(), F_OK | R_OK))
 				throw(std::invalid_argument("Invalid configuration file: wrong error_page path"));
-			row.second = *it;
+			row.second = it->find(";") ? it->substr(0, it->size() - 1) : *it;
 			this->error_pages.insert(row);
 		}
-		++i;
 	}
 	return 0;
 }

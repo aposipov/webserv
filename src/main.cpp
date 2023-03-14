@@ -60,7 +60,7 @@ int	create_and_launch_server(std::string path)
 		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;
 		for (int i = 0; i <= max_fd; ++i)
 			std::cout << i << " Is_set_read " << FD_ISSET(i, &who_read) << " | Is_set_write " << FD_ISSET(i, &who_write) << std::endl;
-		// sleep(2);
+		sleep(2);
 		for (int i = 0; i <= max_fd; ++i)
 		{
 			if (!FD_ISSET(i, &who_read) && !FD_ISSET(i, &who_write) && serv_child_fds.find(i) == serv_child_fds.end())

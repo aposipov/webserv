@@ -145,7 +145,7 @@ int	Response::error_response(int code, std::string const &path_to_page)
 	std::ifstream	ifs;
 
 	if (path_to_page != "")
-		ifs.open(path_to_page.c_str());
+		ifs.open(path_to_page.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
 	if (!ifs.is_open())
 	{
 		if (code == 404)
@@ -173,13 +173,15 @@ int	Response::error_response(int code, std::string const &path_to_page)
 	}
 	
 	if (code == 404)
-		this->content.insert(0, "HTTP/1.1 404 Not Found");
+		this->content.insert(0, "HTTP/1.1 404 Not Found\r\n");
 	else if (code == 400)
-		this->content.insert(0, "HTTP/1.1 400 Bad Request");
+		this->content.insert(0, "HTTP/1.1 400 Bad Request\r\n");
 	else if (code == 405)
-		this->content.insert(0, "HTTP/1.1 405 Method Not Allowed");
+		this->content.insert(0, "HTTP/1.1 405 Method Not Allowed\r\n");
 	else if (code == 403)
-		this->content.insert(0, "HTTP/1.1 403 Forbidden");
+		this->content.insert(0, "HTTP/1.1 403 Forbidden\r\n");
+	else if (code == 502)
+		this->content.insert(0, "HTTP/1.1 502 Bad Gateway\r\n");
 
 	ss << error_page.size();
 	sz = ss.str();
@@ -188,6 +190,9 @@ int	Response::error_response(int code, std::string const &path_to_page)
 	this->content.append("Content-Length: " + sz + "\r\n");
 	this->content.append("\r\n");
 	this->content.append(error_page);
+
+	if (ifs.is_open())
+		ifs.close();
 
 	return 0;
 }
