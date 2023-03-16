@@ -21,8 +21,6 @@ int	create_and_launch_server(std::string path)
 	}
 	std::cout << "Here" << std::endl;
 
-	//Далее запуск сервера
-
 	std::vector<Server>	servers;
 	std::multimap<int, Server*> serv_base_fds;
 	std::map<int, Server*> serv_child_fds;

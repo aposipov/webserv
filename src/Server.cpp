@@ -27,14 +27,14 @@ Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 			servaddr.sin_port = htons(port);
 			listen_fd.push_back(socket(PF_INET, SOCK_STREAM, 0));
 			if (listen_fd.back() < 0)
-				std::cerr << "Socket error" << std::endl;//exception
+				throw(std::logic_error("Socket error"));
 			int opt = 1;
 			std::cout << setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 			std::cout << " - " << opt << std::endl;
 			if ((bind(listen_fd.back(), (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
 				throw(std::logic_error("Bind error"));
 			if ((listen(listen_fd.back(), SOMAXCONN)) < 0)
-				std::cerr << "Listen error" << std::endl;//exception
+				throw(std::logic_error("Listen error"));
 			fcntl(listen_fd.back(), F_SETFL, O_NONBLOCK);
 		}
 	}
@@ -97,6 +97,18 @@ std::string	Server::get_socket_port(int fd) const
 	std::stringstream	ss;
 	ss << ntohs(sin.sin_port);
 	return (ss.str());
+}
+
+std::string	Server::get_client_addr(int fd) const
+{
+	struct sockaddr_in sin;
+	socklen_t len = sizeof(sin);
+	char str[INET_ADDRSTRLEN];
+
+	getsockname(fd, (struct sockaddr *)&sin, &len);
+	inet_ntop( AF_INET, &sin.sin_addr.s_addr, str, INET_ADDRSTRLEN );
+
+	return (str);
 }
 
 std::string	Server::get_only_name(std::string path) const
@@ -163,9 +175,8 @@ int	Server::get_request(int	connfd)
 			return 0;
 		if (mess_lenght == std::string::npos)
 		{
-			//send wrong request
+			client.getResponseToSet().error_response(400, this->my_config.error_pages.find(502)->second);
 			Buf.clear();
-			client.setTimeout(-1);
 			return (-1);
 		}
 		if (Buf.size() - req_lenght - 4 < (std::size_t)std::atol(Buf.substr(mess_lenght + 15).c_str()))
@@ -363,10 +374,9 @@ int	Server::run_cgi(Client &client)
 
 int	Server::add_cgi_variables(Client &client, std::vector<std::vector<char> > &envp)
 {
-	(void)envp;
-
 	std::vector<std::string> envs;
 
+	envs.push_back("REDIRECT_STATUS=");
 	envs.push_back("SERVER_SOFTWARE=webserver_4.2");
 	envs.push_back("SERVER_NAME=" + my_config.server_name);
 	envs.push_back("GATEWAY_INTERFACE=CGI/1.1");
@@ -374,22 +384,12 @@ int	Server::add_cgi_variables(Client &client, std::vector<std::vector<char> > &e
 	envs.push_back("PATH_INFO=");
 	envs.push_back("PATH_TRANSLATED=" + client.getResponseToSet().getPath());
 	envs.push_back("SCRIPT_NAME=" + this->get_only_name(client.getResponseToSet().getPath()));
-	// envs.push_back("REMOTE_HOST=");
-	// envs.push_back("REMOTE_ADDR=");
-	// envs.push_back("AUTH_TYPE=");
-	// envs.push_back("REMOTE_USER=");
-	// envs.push_back("REMOTE_IDENT=");
-	// envs.push_back("CONTENT_TYPE=");
-	// envs.push_back("CONTENT_LENGTH=");
-	// envs.push_back("HTTP_ACCEPT=");
-	// envs.push_back("HTTP_USER_AGENT=");
-	envs.push_back("REDIRECT_STATUS=");
+	envs.push_back("REMOTE_ADDR=" + this->get_client_addr(client.get_myFd()));
+	envs.push_back("CONTENT_TYPE=" + client.getReqest().getHeader("Content-Type").second ? client.getReqest().getHeader("Content-Type").first : "");
+	envs.push_back("CONTENT_LENGTH=" + client.getReqest().getHeader("Content-Length").second ? client.getReqest().getHeader("Content-Length").first : "");
 
 	for (std::vector<std::string>::iterator it = envs.begin(); it < envs.end(); ++it)
-	{
 		envp.push_back(std::vector<char>(it->begin(), it->end()));
-		std::cout << *it << std::endl;
-	}
 	return 0;
 }
 
@@ -493,36 +493,6 @@ int Server::manage_post(Client &client)
 	return 0;
 }
 
-// int	Server::run_post_cgi(Client &client)
-// {
-// 	Request const &request = client.getReqest();
-// 	Response 	&response = client.getResponseToSet();
-// 	std::string path = response.getPath();
-	
-// 	char const * argv[3] = {this->my_config.server_name.c_str(), path.c_str(), 0};
-// 	std::vector<std::vector<char> > envp;
-
-// 	add_cgi_variables(client, envp);
-
-// 	for (std::map<std::string, std::string>::const_iterator it = request.headers_begin(), ite = request.headers_end();
-// 		it != ite; ++it)
-// 	{
-// 		std::string env(it->first + "=" + it->second);
-// 		std::vector<char> tmp(env.begin(), env.end());
-// 		envp.push_back(tmp);
-// 	}
-// 	std::vector<char*> array(envp.size() + 1);
-// 	for (std::vector<char*>::size_type i = 0; i < array.size(); ++i)
-// 		array[i] = envp[i].data();
-// 	array[array.size()] = 0;
-
-// 	if (execve(response.getSettings().cgi_param.c_str(), const_cast<char* const*>(argv), reinterpret_cast<char**>(array.data())))
-// 		exit(1);
-// 	return 0;
-
-// }
-
-
 int Server::manage_delete(Client &client)
 {
 	Request const &request = client.getReqest();
@@ -580,7 +550,6 @@ int	Server::action_response(int connfd)
 
 	std::cout << "Hello from action_response " << client.get_myFd() << " " << content.size() << std::endl;
 
-	//отправка ответа
 	if (content.size())
 	{
 		sended_size = send(connfd, content.c_str() + response.getSendedSize(),

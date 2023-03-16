@@ -73,6 +73,7 @@ class Server
 	int			run_post_cgi(Client &client);
 
 	std::string	get_socket_port(int fd) const;
+	std::string get_client_addr(int fd) const;
 
 	int choose_path(Response &response, std::string const &method);
 	int	set_settings(Client &client, std::map<std::string, Location> const &loc);
