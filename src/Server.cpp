@@ -385,8 +385,8 @@ int	Server::add_cgi_variables(Client &client, std::vector<std::vector<char> > &e
 	envs.push_back("PATH_TRANSLATED=" + client.getResponseToSet().getPath());
 	envs.push_back("SCRIPT_NAME=" + this->get_only_name(client.getResponseToSet().getPath()));
 	envs.push_back("REMOTE_ADDR=" + this->get_client_addr(client.get_myFd()));
-	envs.push_back("CONTENT_TYPE=" + client.getReqest().getHeader("Content-Type").second ? client.getReqest().getHeader("Content-Type").first : "");
-	envs.push_back("CONTENT_LENGTH=" + client.getReqest().getHeader("Content-Length").second ? client.getReqest().getHeader("Content-Length").first : "");
+	envs.push_back(std::string("CONTENT_TYPE=") + (client.getReqest().getHeader("Content-Type").second ? client.getReqest().getHeader("Content-Type").first : ""));
+	envs.push_back(std::string("CONTENT_LENGTH=") + (client.getReqest().getHeader("Content-Length").second ? client.getReqest().getHeader("Content-Length").first : ""));
 
 	for (std::vector<std::string>::iterator it = envs.begin(); it < envs.end(); ++it)
 		envp.push_back(std::vector<char>(it->begin(), it->end()));
