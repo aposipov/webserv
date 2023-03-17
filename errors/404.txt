@@ -1,1 +1,1 @@
-<!DOCTYPE html>\n<html><div id=\"main\"><div class=\"fof\"><h1>Error 404 - HeHe He HeHe</h1></div></div></html>
+<!DOCTYPE html><html><div id=\"main\"><div class=\"fof\"><h1>Error 404 - HeHe He HeHe</h1></div></div></html>
