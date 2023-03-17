@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/03 19:37:29 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/26 01:48:01 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/03/17 15:58:06 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,8 +29,7 @@ Server::Server(Conf const &conf) : listen_fd(), my_config(conf)
 			if (listen_fd.back() < 0)
 				throw(std::logic_error("Socket error"));
 			int opt = 1;
-			std::cout << setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-			std::cout << " - " << opt << std::endl;
+			setsockopt(listen_fd.back(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 			if ((bind(listen_fd.back(), (const struct sockaddr *)&servaddr, sizeof(servaddr))) < 0)
 				throw(std::logic_error("Bind error"));
 			if ((listen(listen_fd.back(), SOMAXCONN)) < 0)
@@ -49,7 +48,7 @@ Server::Server(Server const &rhs) : listen_fd(rhs.listen_fd), my_config(rhs.my_c
 
 Server::~Server()
 {
-	std::cout << "Server finished" << std::endl;
+	std::cout << "Server destructor" << std::endl;
 }
 
 std::string	Server::get_my_name() const { return my_config.server_name; }
@@ -160,11 +159,7 @@ int	Server::get_request(int	connfd)
 
 	memset(buf, 0, my_config.client_body_buffer_size);
 	while ((n = recv(connfd, buf, my_config.client_body_buffer_size - 1, 0)) > 0)
-	{
 		Buf.append(buf, n);
-		std::cout << Buf << std::endl;
-	}
-	std::cout << "Got available request from client: " << client.get_myFd() << " and n is " << n << std::endl;
 	delete [] buf;
 	if (n == 0)
 		client.setTimeout(-1);
@@ -555,7 +550,7 @@ int	Server::action_response(int connfd)
 		sended_size = send(connfd, content.c_str() + response.getSendedSize(),
 			((content.size() - response.getSendedSize()) > my_config.client_body_buffer_size) ? my_config.client_body_buffer_size :
 				(content.size() - response.getSendedSize()) , MSG_DONTWAIT);
-		std::cout << sended_size << "<<<<<<<<<<<<>>>>>>>>>>>>" << std::endl;
+		// std::cout << sended_size << "<<<<<<<<<<<<>>>>>>>>>>>>" << std::endl;
 		if (sended_size > 0)
 		{
 			response.setSendSize(sended_size + response.getSendedSize());

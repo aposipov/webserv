@@ -1,8 +1,17 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/03/17 15:55:28 by mnathali          #+#    #+#             */
+/*   Updated: 2023/03/17 16:00:06 by mnathali         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "Server.hpp"
-
-
 #include "Conf.hpp"
-
 
 int	create_and_launch_server(std::string path)
 {
@@ -19,7 +28,6 @@ int	create_and_launch_server(std::string path)
 		std::cerr << e.what() << '\n';
 		throw;
 	}
-	std::cout << "Here" << std::endl;
 
 	std::vector<Server>	servers;
 	std::multimap<int, Server*> serv_base_fds;
@@ -54,11 +62,10 @@ int	create_and_launch_server(std::string path)
 	while (1)
 	{
 		who_read = who_write = copy;
-		int sel = select(max_fd + 1, &who_read, &who_write, NULL, NULL);
-		std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;
-		for (int i = 0; i <= max_fd; ++i)
-			std::cout << i << " Is_set_read " << FD_ISSET(i, &who_read) << " | Is_set_write " << FD_ISSET(i, &who_write) << std::endl;
-		sleep(2);
+		select(max_fd + 1, &who_read, &who_write, NULL, NULL);
+		// std::cout << "Select = " << sel << "; found action on write or read set" << std::endl;
+		// for (int i = 0; i <= max_fd; ++i)
+		// 	std::cout << i << " Is_set_read " << FD_ISSET(i, &who_read) << " | Is_set_write " << FD_ISSET(i, &who_write) << std::endl;
 		for (int i = 0; i <= max_fd; ++i)
 		{
 			if (!FD_ISSET(i, &who_read) && !FD_ISSET(i, &who_write) && serv_child_fds.find(i) == serv_child_fds.end())
@@ -73,7 +80,7 @@ int	create_and_launch_server(std::string path)
 				FD_SET(connfd, &copy);
 				if (max_fd < connfd)
 					max_fd = connfd;
-				std::cout << "New max_fd = " << max_fd << std::endl;break;
+				break;
 			}
 			else if (FD_ISSET(i, &who_read))
 			{

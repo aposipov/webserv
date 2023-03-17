@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/27 00:25:00 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/17 13:53:54 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/03/17 16:00:25 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -305,7 +305,6 @@ int	Conf::set_error_page(std::vector<std::string> const &what_error)
 
 	for (std::vector<std::string>::const_iterator it = what_error.begin(); it < what_error.end(); ++it)
 	{
-		std::cout << *it << std::endl;
 		if ((it - what_error.begin()) % 2 == 0 && *it != ";")
 		{
 			if (it->find_first_not_of("0123456789") != std::string::npos)

@@ -6,7 +6,7 @@
 /*   By: mnathali <mnathali@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/02/02 00:40:04 by mnathali          #+#    #+#             */
-/*   Updated: 2023/02/12 16:51:03 by mnathali         ###   ########.fr       */
+/*   Updated: 2023/03/17 15:58:42 by mnathali         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@ Request::Request() { std::cout << "Default constructor request" << std::endl; }
 
 Request::Request(std::string const &request)
 {
-	std::cout << "Fill the blanks" << std::endl;
 	std::pair<std::string, std::string>	row;
 	std::size_t	m = request.find("\r\n");
 	std::string bottom = request.substr(0, m);
@@ -44,8 +43,8 @@ Request::Request(std::string const &request)
 	if (request.size() - m > 3)
 		content = request.substr(m + 3);
 	this->query_string();
-	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it)
-		std::cout << it->first << " ::----:: " << it->second << std::endl;
+	// for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it)
+	// 	std::cout << it->first << " ::----:: " << it->second << std::endl;
 }
 
 Request::Request(Request const &rhs) : headers(rhs.headers), content(rhs.content)
